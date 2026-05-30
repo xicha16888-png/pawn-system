@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>手机抵押贷款管理系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+Khmer:wght@400;500;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0d3b6e;--blue:#1565c0;--sky:#1e88e5;--light:#e3f2fd;
+  --green:#2e7d32;--red:#c62828;--amber:#e65100;--orange:#f57c00;
+  --purple:#6a1b9a;--teal:#00695c;
+  --gray:#546e7a;--bg:#f0f4f8;--white:#fff;--border:#cfd8dc;
+  --text:#1a2a3a;--muted:#78909c;
+}
+html,body{height:100%;font-family:'Noto Sans SC','Noto Sans Khmer',sans-serif;background:var(--bg);color:var(--text)}
+/* HEADER */
+.header{position:fixed;top:0;left:0;right:0;height:52px;background:linear-gradient(135deg,#0d3b6e,#1565c0);display:flex;align-items:center;padding:0 16px;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-title{color:#fff;font-size:15px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
+.header-right{display:flex;align-items:center;gap:8px}
+.chip{background:rgba(255,255,255,.18);color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;margin-right:4px}
+.sync-dot.syncing{background:#ff9800;animation:pulse .8s infinite}
+.sync-dot.error{background:#f44336}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* LAYOUT */
+.layout{display:flex;margin-top:52px;min-height:calc(100vh - 52px)}
+.sidebar{width:200px;background:linear-gradient(180deg,#0d3b6e,#1a4a8a);position:fixed;top:52px;bottom:0;overflow-y:auto;z-index:100}
+.sb-logo{padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-logo-name{color:#fff;font-size:16px;font-weight:700}
+.sb-logo-sub{color:rgba(255,255,255,.55);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.sb-label{color:rgba(255,255,255,.4);font-size:10px;letter-spacing:1.5px;padding:14px 16px 4px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,.75);cursor:pointer;font-size:13px;border-left:3px solid transparent;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff;border-left-color:#42a5f5;font-weight:600}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.nav-badge{background:#f44336;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:auto}
+.nav-divider{height:1px;background:rgba(255,255,255,.1);margin:6px 0}
+.main{margin-left:200px;flex:1;padding:20px;overflow-y:auto}
+/* CARDS */
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:15px;font-weight:700;color:var(--navy)}
+/* PAGE HEADER */
+.page-header{margin-bottom:20px}
+.page-title{font-size:22px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:10px}
+.page-sub{color:var(--muted);font-size:13px;margin-top:4px}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);position:relative;overflow:hidden}
+.stat-card.blue{border-top:3px solid var(--sky)}
+.stat-card.green{border-top:3px solid var(--green)}
+.stat-card.amber{border-top:3px solid var(--orange)}
+.stat-card.red{border-top:3px solid var(--red)}
+.stat-card.purple{border-top:3px solid var(--purple)}
+.stat-card.teal{border-top:3px solid var(--teal)}
+.stat-label{font-size:12px;color:var(--muted);margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:700;color:var(--navy)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-icon{position:absolute;right:14px;top:14px;font-size:28px;opacity:.18}
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.span2{grid-column:span 2}
+.form-group.span3{grid-column:span 3}
+.form-group label{font-size:12px;color:var(--gray);font-weight:600}
+.form-group input,.form-group select,.form-group textarea{border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group select:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(30,136,229,.1)}
+.form-group textarea{min-height:70px;resize:vertical}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--sky);color:#fff}.btn-primary:hover{background:#1976d2}
+.btn-success{background:#2e7d32;color:#fff}.btn-success:hover{background:#1b5e20}
+.btn-danger{background:#c62828;color:#fff}.btn-danger:hover{background:#b71c1c}
+.btn-warning{background:#e65100;color:#fff}.btn-warning:hover{background:#bf360c}
+.btn-purple{background:#6a1b9a;color:#fff}.btn-purple:hover{background:#4a148c}
+.btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--gray)}.btn-outline:hover{border-color:var(--sky);color:var(--sky)}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+.btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+/* TABLE */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-weight:600;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #eef2f7;vertical-align:middle}
+tr:hover td{background:#f8faff}
+.fw700{font-weight:700}
+.text-blue{color:var(--sky)}.text-green{color:var(--green)}.text-red{color:var(--red)}.text-amber{color:var(--orange)}.text-muted{color:var(--muted)}.text-purple{color:var(--purple)}
+/* BADGES */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-blue{background:#e3f2fd;color:#1565c0}
+.badge-green{background:#e8f5e9;color:#2e7d32}
+.badge-red{background:#ffebee;color:#c62828}
+.badge-amber{background:#fff8e1;color:#e65100}
+.badge-purple{background:#f3e5f5;color:#6a1b9a}
+.badge-gray{background:#eceff1;color:#546e7a}
+.badge-teal{background:#e0f2f1;color:#00695c}
+/* ALERT */
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.alert-red{background:#ffebee;border-left:4px solid var(--red);color:var(--red)}
+.alert-amber{background:#fff8e1;border-left:4px solid var(--orange);color:var(--orange)}
+.alert-green{background:#e8f5e9;border-left:4px solid var(--green);color:var(--green)}
+.alert-blue{background:#e3f2fd;border-left:4px solid var(--sky);color:var(--sky)}
+/* EMPTY */
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.ei{font-size:48px;margin-bottom:12px}
+/* LOADING */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(13,59,110,.85);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.loading-overlay.show{display:flex}
+.loading-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:#fff;font-size:15px}
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;max-width:700px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;font-size:16px;font-weight:700;color:var(--navy)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px}
+/* SEARCH ROW */
+.search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.search-row input{flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none}
+.search-row input:focus{border-color:var(--sky)}
+/* STATUS COLORS */
+.status-active{color:var(--sky);font-weight:600}
+.status-settled{color:var(--green);font-weight:600}
+.status-overdue{color:var(--red);font-weight:600}
+.status-extended{color:var(--purple);font-weight:600}
+/* MOBILE NAV */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);z-index:300;box-shadow:0 -2px 12px rgba(0,0,0,.1)}
+.mob-nav-inner{display:flex;justify-content:space-around;align-items:center;height:58px}
+.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;cursor:pointer;flex:1;border:none;background:none;font-family:inherit;position:relative}
+.mob-nav-item .mni{font-size:22px;line-height:1}
+.mob-nav-item .mnl{font-size:9px;color:var(--muted);font-weight:500}
+.mob-nav-item.active .mnl{color:var(--sky)}
+.mob-nav-item.active .mni{transform:scale(1.15)}
+.mob-badge{position:absolute;top:2px;right:10px;background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700}
+.mob-more-menu{display:none;position:fixed;bottom:58px;left:0;right:0;background:#fff;z-index:299;border-top:1px solid var(--border);box-shadow:0 -4px 20px rgba(0,0,0,.15);max-height:60vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:8px 0}
+.mob-more-menu.open{display:block}
+.mob-more-item{display:flex;align-items:center;gap:14px;padding:14px 20px;font-size:14px;cursor:pointer;border:none;background:none;width:100%;font-family:inherit;text-align:left}
+.mob-more-item:active{background:#f0f7ff}
+.mob-overlay{display:none;position:fixed;inset:0;z-index:298}
+.mob-overlay.open{display:block}
+/* PHONE CONDITION BADGES */
+.cond-new{background:#e8f5e9;color:#2e7d32}
+.cond-9{background:#e3f2fd;color:#1565c0}
+.cond-8{background:#fff8e1;color:#e65100}
+.cond-7{background:#ffebee;color:#c62828}
+/* MOBILE RESPONSIVE */
+@media(max-width:768px){
+  html,body{overflow:auto;height:auto}
+  .header{height:48px}
+  .sidebar{display:none}
+  .layout{margin-top:48px}
+  .main{margin-left:0;padding:12px 12px 74px}
+  .mob-nav{display:block}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .stat-value{font-size:20px}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.span2,.form-group.span3{grid-column:span 1}
+  .form-group input,.form-group select{font-size:15px;padding:12px}
+  .btn{padding:12px 18px;font-size:14px}
+  .btn-row{flex-direction:column}
+  .btn-row .btn{width:100%}
+  .table-wrap{overflow-x:auto}
+  table{font-size:12px;min-width:500px}
+}
+@media(max-width:380px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">正在连接服务器...</div>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title"><span id="modalTitle"></span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="mob-overlay" id="mobOverlay" onclick="closeMobMore()"></div>
+<div class="mob-more-menu" id="mobMoreMenu"></div>
+
+<div class="header">
+  <div class="header-title">📱 <span id="headerTitle">手机抵押贷款管理系统</span></div>
+  <div class="header-right">
+    <span id="syncStatus"><span class="sync-dot"></span><span id="syncText">已同步</span></span>
+    <button onclick="manualRefresh()" id="refreshBtn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🔄</button>
+    <button id="langToggle" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🌐 EN</button>
+    <span class="chip" id="companyName">PAWN</span>
+    <span class="chip" id="dateDisplay"></span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebarEl"></div>
+  <div class="main" id="mainContent"></div>
+</div>
+
+<div class="mob-nav">
+  <div class="mob-nav-inner" id="mobNavInner"></div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+// i18n
+// ══════════════════════════════════════════════════════
+let _lang = localStorage.getItem('pawn_lang') || 'zh';
+const I18N = {
+  zh: {
+    systemTitle:'手机抵押贷款管理系统', systemSub:'抵押管理系统',
+    synced:'已同步', syncing:'同步中...', syncError:'同步失败!',
+    mainMenu:'主菜单', loanMgmt:'贷款管理', reports:'统计报表', settings:'基础设置',
+    home:'系统首页', loanAdd:'抵押登记', loanList:'贷款查询',
+    paymentAdd:'收息还款', extension:'续期办理',
+    stats:'利息统计', financeReport:'财务报表',
+    reminderOverdue:'逾期提醒', reminderTomorrow:'明日到期',
+    company:'单位信息', expenses:'日常开支',
+    // loan form
+    loanDate:'贷款日期', customerName:'客户姓名 *', customerPhone:'客户电话',
+    customerId:'身份证号', loanAmount:'贷款金额 ($) *',
+    monthlyRate:'月利率 (%)', periods:'贷款期数', firstDue:'首次还款日',
+    phoneBrand:'手机品牌', phoneModel:'型号 *', phoneStorage:'内存',
+    phoneColor:'颜色', phoneCondition:'成色 *', phoneImei:'IMEI号',
+    phoneNote:'手机备注', shopName:'店铺名称', salesperson:'业务员',
+    remarks:'备注',
+    // phone condition
+    cond100:'全新', cond95:'99成新', cond9:'9成新', cond8:'8成新', cond7:'7成及以下',
+    // calc
+    monthlyInterest:'每月利息 ($)', monthlyPrincipal:'每期本金 ($)', totalInterest:'利息总额 ($)',
+    totalRepay:'还款总额 ($)', saveLoan:'✅ 保存贷款合同', viewLoans:'📋 查看贷款列表',
+    // list
+    loanListTitle:'贷款查询', searchPlaceholder:'搜索客户/合同号/型号/IMEI...',
+    newLoanBtn:'➕ 新建抵押', allStatus:'全部状态',
+    active:'进行中', settled:'已结清', extended:'已续期',
+    colNo:'#', colDate:'日期', colCustomer:'客户', colPhone:'电话',
+    colModel:'型号', colImei:'IMEI', colLoanAmt:'贷款额', colPeriods:'期数',
+    colRate:'月利率', colMonthly:'每月利息', colProgress:'进度', colStatus:'状态', colAction:'操作',
+    viewSchedule:'查看计划', deleteBtn:'删除',
+    // payment
+    paymentTitle:'收息还款', selectLoan:'选择合同 *',
+    paymentDate:'还款日期', payPeriod:'还款期次',
+    paidInterest:'实收利息 ($)', paidPrincipal:'实收本金 ($)',
+    penalty:'滞纳金 ($)', totalPayment:'本次合计 ($)',
+    confirmPayment:'✅ 确认收款', recentPayments:'最近收款记录',
+    // extension
+    extensionTitle:'续期办理', extensionSub:'延长贷款期限，重新计算还款计划',
+    selectLoanExt:'选择合同 *', currentInfo:'当前贷款信息',
+    remainPrincipal:'剩余本金 ($)', extPeriods:'续期期数',
+    extFee:'续期手续费 ($)', newMonthlyInterest:'续期后每月利息 ($)',
+    confirmExtension:'✅ 确认续期',
+    // stats
+    statsTitle:'利息统计', totalInterestCollected:'累计收息',
+    totalPrincipalCollected:'累计收回本金', pendingPrincipal:'待收本金',
+    activeLoans:'进行中贷款', overdueLoans:'逾期贷款',
+    monthlyStats:'按月统计',
+    // finance
+    financeTitle:'财务报表',
+    // overdue
+    overdueTitle:'逾期提醒', noOverdue:'暂无逾期账单',
+    tomorrowTitle:'明日到期提醒',
+    // common
+    save:'保存', cancel:'取消', delete:'删除', noData:'暂无数据',
+    noRecord:'暂无记录', totalRow:'合计', more:'更多',
+    period:'期', days:'天', daysOverdue:'逾期',
+    msgFillCustomer:'请填写客户姓名', msgFillAmount:'请填写贷款金额',
+    msgFillModel:'请填写手机型号', msgFillCondition:'请选择手机成色',
+    msgFillDue:'请选择首次还款日', msgSelectLoan:'请选择合同',
+    msgPeriodPaid:'该期已登记', saved:'已保存', added:'已添加',
+    // expense
+    expensesTitle:'日常开支', addExpense:'新增开支',
+    expDate:'日期', expCat:'类别', expAmt:'金额 ($)', expNote:'说明',
+    saveExpense:'✅ 保存开支',
+  },
+  en: {
+    systemTitle:'Phone Collateral Loan System', systemSub:'Loan Management',
+    synced:'Synced', syncing:'Syncing...', syncError:'Sync Failed!',
+    mainMenu:'Main Menu', loanMgmt:'Loan Management', reports:'Reports', settings:'Settings',
+    home:'Home', loanAdd:'New Loan', loanList:'Loan Query',
+    paymentAdd:'Payment Entry', extension:'Loan Extension',
+    stats:'Interest Stats', financeReport:'Finance Report',
+    reminderOverdue:'Overdue Alerts', reminderTomorrow:'Due Tomorrow',
+    company:'Company Info', expenses:'Expenses',
+    loanDate:'Loan Date', customerName:'Customer Name *', customerPhone:'Customer Phone',
+    customerId:'ID Number', loanAmount:'Loan Amount ($) *',
+    monthlyRate:'Monthly Rate (%)', periods:'Loan Periods', firstDue:'First Due Date',
+    phoneBrand:'Brand', phoneModel:'Model *', phoneStorage:'Storage',
+    phoneColor:'Color', phoneCondition:'Condition *', phoneImei:'IMEI',
+    phoneNote:'Phone Notes', shopName:'Shop Name', salesperson:'Salesperson',
+    remarks:'Remarks',
+    cond100:'Brand New', cond95:'Like New', cond9:'Excellent', cond8:'Good', cond7:'Fair',
+    monthlyInterest:'Monthly Interest ($)', monthlyPrincipal:'Monthly Principal ($)',
+    totalInterest:'Total Interest ($)', totalRepay:'Total Repayment ($)',
+    saveLoan:'✅ Save Loan', viewLoans:'📋 View Loans',
+    loanListTitle:'Loan Query', searchPlaceholder:'Search customer/contract/model/IMEI...',
+    newLoanBtn:'➕ New Loan', allStatus:'All Status',
+    active:'Active', settled:'Settled', extended:'Extended',
+    colNo:'#', colDate:'Date', colCustomer:'Customer', colPhone:'Phone',
+    colModel:'Model', colImei:'IMEI', colLoanAmt:'Loan Amt', colPeriods:'Periods',
+    colRate:'Rate', colMonthly:'Monthly Int', colProgress:'Progress', colStatus:'Status', colAction:'Action',
+    viewSchedule:'Schedule', deleteBtn:'Delete',
+    paymentTitle:'Payment Entry', selectLoan:'Select Contract *',
+    paymentDate:'Payment Date', payPeriod:'Period',
+    paidInterest:'Interest Received ($)', paidPrincipal:'Principal Received ($)',
+    penalty:'Late Fee ($)', totalPayment:'Total ($)',
+    confirmPayment:'✅ Confirm Payment', recentPayments:'Recent Payments',
+    extensionTitle:'Loan Extension', extensionSub:'Extend loan term and recalculate schedule',
+    selectLoanExt:'Select Contract *', currentInfo:'Current Loan Info',
+    remainPrincipal:'Remaining Principal ($)', extPeriods:'Extension Periods',
+    extFee:'Extension Fee ($)', newMonthlyInterest:'New Monthly Interest ($)',
+    confirmExtension:'✅ Confirm Extension',
+    statsTitle:'Interest Statistics', totalInterestCollected:'Total Interest Collected',
+    totalPrincipalCollected:'Total Principal Recovered', pendingPrincipal:'Pending Principal',
+    activeLoans:'Active Loans', overdueLoans:'Overdue Loans', monthlyStats:'Monthly Stats',
+    financeTitle:'Finance Report',
+    overdueTitle:'Overdue Alerts', noOverdue:'No overdue loans',
+    tomorrowTitle:'Due Tomorrow',
+    save:'Save', cancel:'Cancel', delete:'Delete', noData:'No data',
+    noRecord:'No records', totalRow:'Total', more:'More',
+    period:'Period', days:'days', daysOverdue:'days overdue',
+    msgFillCustomer:'Please enter customer name', msgFillAmount:'Please enter loan amount',
+    msgFillModel:'Please enter phone model', msgFillCondition:'Please select phone condition',
+    msgFillDue:'Please select first due date', msgSelectLoan:'Please select a contract',
+    msgPeriodPaid:'This period already recorded', saved:'Saved', added:'Added',
+    expensesTitle:'Expenses', addExpense:'Add Expense',
+    expDate:'Date', expCat:'Category', expAmt:'Amount ($)', expNote:'Note',
+    saveExpense:'✅ Save Expense',
+  },
+  km: {
+    systemTitle:'ប្រព័ន្ធប្រាក់កម្ចីទូរសព្ទ', systemSub:'ប្រព័ន្ធគ្រប់គ្រង',
+    synced:'បានធ្វើសមកាលកម្ម', syncing:'កំពុងធ្វើ...', syncError:'ការធ្វើបានបរាជ័យ!',
+    mainMenu:'ម៉ឺនុយចម្បង', loanMgmt:'ការគ្រប់គ្រងប្រាក់កម្ចី', reports:'របាយការណ៍', settings:'ការកំណត់',
+    home:'ទំព័រដើម', loanAdd:'ចុះឈ្មោះបញ្ចាំ', loanList:'ស្វែងរកប្រាក់កម្ចី',
+    paymentAdd:'ការទូទាត់', extension:'បន្តរយ:ពេល',
+    stats:'ស្ថិតិការប្រាក់', financeReport:'របាយការណ៍ហិរញ្ញវត្ថុ',
+    reminderOverdue:'ការរំឭកហួសកំណត់', reminderTomorrow:'ដល់កំណត់ស្អែក',
+    company:'ព័ត៌មានក្រុមហ៊ុន', expenses:'ការចំណាយ',
+    loanDate:'កាលបរិច្ឆេទ', customerName:'ឈ្មោះអតិថិជន *', customerPhone:'ទូរស័ព្ទ',
+    customerId:'លេខអត្តសញ្ញាណប័ណ្ណ', loanAmount:'ចំនួនប្រាក់កម្ចី ($) *',
+    monthlyRate:'អត្រាការប្រាក់ប្រចាំខែ (%)', periods:'ចំនួនខែ', firstDue:'ថ្ងៃទូទាត់ដំបូង',
+    phoneBrand:'ម៉ាក', phoneModel:'គំរូ *', phoneStorage:'ទំហំផ្ទុក',
+    phoneColor:'ពណ៌', phoneCondition:'លក្ខណៈ *', phoneImei:'IMEI',
+    phoneNote:'កំណត់ចំណាំ', shopName:'ឈ្មោះហាង', salesperson:'អ្នកលក់',
+    remarks:'កំណត់ចំណាំ',
+    cond100:'ថ្មី', cond95:'ស្ទើរថ្មី', cond9:'9/10', cond8:'8/10', cond7:'7/10',
+    monthlyInterest:'ការប្រាក់ប្រចាំខែ ($)', monthlyPrincipal:'ដើមប្រចាំខែ ($)',
+    totalInterest:'ការប្រាក់សរុប ($)', totalRepay:'សរុបទូទាត់ ($)',
+    saveLoan:'✅ រក្សាទុក', viewLoans:'📋 មើលបញ្ជី',
+    loanListTitle:'ស្វែងរកប្រាក់កម្ចី', searchPlaceholder:'ស្វែងរក...',
+    newLoanBtn:'➕ ប្រាក់កម្ចីថ្មី', allStatus:'ស្ថានភាពទាំងអស់',
+    active:'កំពុងដំណើរ', settled:'បានទូទាត់', extended:'បានបន្ត',
+    colNo:'#', colDate:'កាល', colCustomer:'អតិថិជន', colPhone:'ទូរស័ព្ទ',
+    colModel:'គំរូ', colImei:'IMEI', colLoanAmt:'ចំនួន', colPeriods:'ខែ',
+    colRate:'អត្រា', colMonthly:'ការប្រាក់/ខែ', colProgress:'វឌ្ឍនភាព', colStatus:'ស្ថានភាព', colAction:'សកម្ម',
+    viewSchedule:'ផែនការ', deleteBtn:'លុប',
+    paymentTitle:'ការទូទាត់', selectLoan:'ជ្រើសរើស *',
+    paymentDate:'កាលបរិច្ឆេទ', payPeriod:'ខែ',
+    paidInterest:'ការប្រាក់ ($)', paidPrincipal:'ប្រាក់ដើម ($)',
+    penalty:'ប្រាក់ពិន័យ ($)', totalPayment:'សរុប ($)',
+    confirmPayment:'✅ បញ្ជាក់', recentPayments:'កំណត់ត្រា',
+    extensionTitle:'បន្តរយ:ពេល', extensionSub:'បន្តរយ:ពេលប្រាក់កម្ចី',
+    selectLoanExt:'ជ្រើសរើស *', currentInfo:'ព័ត៌មានបច្ចុប្បន្ន',
+    remainPrincipal:'ប្រាក់ដើមនៅសល់ ($)', extPeriods:'ចំនួនខែបន្ត',
+    extFee:'ថ្លៃបន្ត ($)', newMonthlyInterest:'ការប្រាក់ថ្មី ($)',
+    confirmExtension:'✅ បញ្ជាក់',
+    statsTitle:'ស្ថិតិការប្រាក់', totalInterestCollected:'ការប្រាក់សរុប',
+    totalPrincipalCollected:'ប្រាក់ដើមដែលបានប្រមូល', pendingPrincipal:'ប្រាក់ដើមរង់ចាំ',
+    activeLoans:'ប្រាក់កម្ចីសកម្ម', overdueLoans:'ហួសកំណត់', monthlyStats:'ប្រចាំខែ',
+    financeTitle:'របាយការណ៍ហិរញ្ញវត្ថុ',
+    overdueTitle:'ការរំឭកហួសកំណត់', noOverdue:'គ្មានហួសកំណត់',
+    tomorrowTitle:'ដល់កំណត់ស្អែក',
+    save:'រក្សាទុក', cancel:'បោះបង់', delete:'លុប', noData:'គ្មានទិន្នន័យ',
+    noRecord:'គ្មានកំណត់ត្រា', totalRow:'សរុប', more:'ច្រើនទៀត',
+    period:'ខែ', days:'ថ្ងៃ', daysOverdue:'ហួស',
+    msgFillCustomer:'សូមបញ្ចូលឈ្មោះ', msgFillAmount:'សូមបញ្ចូលចំនួន',
+    msgFillModel:'សូមបញ្ចូលគំរូ', msgFillCondition:'សូមជ្រើស',
+    msgFillDue:'សូមជ្រើស', msgSelectLoan:'សូមជ្រើស',
+    msgPeriodPaid:'ខែនេះបានចុះហើយ', saved:'បានរក្សា', added:'បានបន្ថែម',
+    expensesTitle:'ការចំណាយ', addExpense:'បន្ថែមការចំណាយ',
+    expDate:'កាល', expCat:'ប្រភេទ', expAmt:'ចំនួន ($)', expNote:'ការពិពណ៌នា',
+    saveExpense:'✅ រក្សាទុក',
+  }
+};
+function t(k){ return (I18N[_lang]||I18N.zh)[k] || k; }
+function getLangLabel(l){ return l==='zh'?'🌐 EN':l==='en'?'🌐 ខ្មែរ':'🌐 中文'; }
+window.toggleLang = function(){
+  _lang = _lang==='zh'?'en':_lang==='en'?'km':'zh';
+  localStorage.setItem('pawn_lang',_lang);
+  const btn=document.getElementById('langToggle'); if(btn) btn.textContent=getLangLabel(_lang);
+  const ht=document.getElementById('headerTitle'); if(ht) ht.textContent=t('systemTitle');
+  buildSidebar(); buildMobNav(currentPage());
+  nav(currentPage());
+};
+
+// ── Helpers ──
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmt(n){ return '$'+(+n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function newId(){ const id=(DB_get('nextId')||1001); DB_set('nextId',id+1); return id; }
+function showMsg(id,msg,color='green'){
+  const el=document.getElementById(id); if(!el) return;
+  const c={'green':'alert-green','red':'alert-red','amber':'alert-amber','blue':'alert-blue'}[color]||'alert-green';
+  el.className=`alert ${c}`; el.textContent=msg; el.style.display='';
+  setTimeout(()=>{el.style.display='none';},4000);
+}
+function showModal(title, body){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=body;
+  document.getElementById('modalBg').classList.add('show');
+}
+window.closeModal=function(){ document.getElementById('modalBg').classList.remove('show'); }
+function showLoading(msg){ const o=document.getElementById('loadingOverlay'); if(o){o.classList.add('show'); const lt=document.getElementById('loadingText'); if(lt)lt.textContent=msg||t('syncing');} }
+function hideLoading(){ document.getElementById('loadingOverlay')?.classList.remove('show'); }
+function currentPage(){ return document.querySelector('.nav-item.active')?.dataset?.page||'home'; }
+function daysDiff(d1,d2){ return Math.floor((new Date(d2)-new Date(d1))/86400000); }
+
+// ── Status helpers ──
+function statusBadge(status){
+  if(status==='已结清'||status==='Settled') return `<span class="badge badge-green">${t('settled')}</span>`;
+  if(status==='已续期'||status==='Extended') return `<span class="badge badge-purple">${t('extended')}</span>`;
+  return `<span class="badge badge-blue">${t('active')}</span>`;
+}
+
+// ── DB ──
+let _db=null, _dirty=false, _dbReady=false, _syncTimer=null, _lastSync=null;
+function DB_get(k){ return _db?_db[k]:null; }
+function DB_set(k,v){ if(!_db||!_dbReady){console.warn('DB not ready');return;} _db[k]=v; markDirty(); }
+function markDirty(){ if(!_dbReady) return; _dirty=true; clearTimeout(_syncTimer); _syncTimer=setTimeout(()=>{if(_dirty)saveDB();},800); }
+function setSyncStatus(s){
+  const dot=document.querySelector('.sync-dot'), txt=document.getElementById('syncText');
+  if(dot) dot.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
+  if(txt) txt.textContent=s==='syncing'?t('syncing'):s==='error'?t('syncError'):t('synced');
+}
+async function loadDB(){
+  try{
+    const ctrl=new AbortController(), timer=setTimeout(()=>ctrl.abort(),20000);
+    const res=await fetch('/api/data',{cache:'no-store',signal:ctrl.signal}); clearTimeout(timer);
+    if(!res.ok) return {ok:false,reason:`HTTP ${res.status}`};
+    const data=await res.json();
+    if(!data||typeof data!=='object') return {ok:false,reason:'Invalid JSON'};
+    ['loans','payments','extensions','expenses','stores'].forEach(k=>{if(!Array.isArray(data[k]))data[k]=[];});
+    if(!data.nextId) data.nextId=1001;
+    if(!data.company) data.company={name:'PAWN SYSTEM',address:'',phone:'',note:''};
+    _db=data; _dbReady=true; _lastSync=Date.now();
+    try{ const el=document.getElementById('companyName'); if(el&&data.company?.name) el.textContent=data.company.name; }catch(e){}
+    return {ok:true};
+  }catch(e){ return {ok:false,reason:e.name==='AbortError'?'Timeout':e.message}; }
+}
+async function saveDB(){
+  if(!_dbReady||!_db) return;
+  setSyncStatus('syncing');
+  try{
+    const res=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_db)});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    setSyncStatus('ok'); _dirty=false; _lastSync=Date.now();
+  }catch(e){ setSyncStatus('error'); }
+}
+window.manualRefresh=async function(){
+  setSyncStatus('syncing');
+  const r=await loadDB();
+  if(r.ok){ setSyncStatus('ok'); const p=currentPage(); if(PAGES[p]){document.getElementById('mainContent').innerHTML=PAGES[p](); initPage(p);} updateBadges(); }
+  else setSyncStatus('error');
+};
+
+// ── Auto refresh 15s ──
+function userTyping(){ const a=document.activeElement; return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT'); }
+const FORM_PAGES=['loan-add','payment-add','extension','expenses','company'];
+setInterval(async()=>{
+  if(_dirty||userTyping()) return;
+  const p=currentPage(); if(FORM_PAGES.includes(p)) return;
+  const r=await loadDB();
+  if(r.ok&&PAGES[p]){document.getElementById('mainContent').innerHTML=PAGES[p](); initPage(p); updateBadges();}
+},15000);
+
+// ── Sidebar ──
+function buildSidebar(){
+  const p=currentPage();
+  const sb=document.getElementById('sidebarEl'); if(!sb) return;
+  sb.innerHTML=`
+    <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">PAWN</div></div>
+    <div style="padding:4px 0">
+      <div class="sb-label">${t('mainMenu')}</div>
+      <div class="nav-item" data-page="home"><span class="nav-icon">🏠</span>${t('home')}</div>
+    </div>
+    <div class="nav-divider"></div>
+    <div style="padding:4px 0">
+      <div class="sb-label">${t('loanMgmt')}</div>
+      <div class="nav-item" data-page="loan-add"><span class="nav-icon">➕</span>${t('loanAdd')}</div>
+      <div class="nav-item" data-page="loan-list"><span class="nav-icon">🔍</span>${t('loanList')}</div>
+      <div class="nav-item" data-page="payment-add"><span class="nav-icon">💰</span>${t('paymentAdd')}</div>
+      <div class="nav-item" data-page="extension"><span class="nav-icon">🔄</span>${t('extension')}</div>
+    </div>
+    <div class="nav-divider"></div>
+    <div style="padding:4px 0">
+      <div class="sb-label">${t('reports')}</div>
+      <div class="nav-item" data-page="stats"><span class="nav-icon">📊</span>${t('stats')} 🔐</div>
+      <div class="nav-item" data-page="finance"><span class="nav-icon">📈</span>${t('financeReport')} 🔐</div>
+      <div class="nav-item" data-page="expenses"><span class="nav-icon">🧾</span>${t('expenses')} 🔐</div>
+    </div>
+    <div class="nav-divider"></div>
+    <div style="padding:4px 0">
+      <div class="sb-label">${t('reminderOverdue')}</div>
+      <div class="nav-item" data-page="overdue"><span class="nav-icon">🚨</span>${t('reminderOverdue')}<span class="nav-badge" id="overdueBadge" style="display:none">0</span></div>
+      <div class="nav-item" data-page="tomorrow"><span class="nav-icon">⏰</span>${t('reminderTomorrow')}</div>
+    </div>
+    <div class="nav-divider"></div>
+    <div style="padding:4px 0">
+      <div class="sb-label">${t('settings')}</div>
+      <div class="nav-item" data-page="company"><span class="nav-icon">⚙️</span>${t('company')}</div>
+    </div>`;
+  sb.querySelectorAll('.nav-item[data-page]').forEach(el=>{
+    el.addEventListener('click',()=>nav(el.dataset.page));
+    if(el.dataset.page===p) el.classList.add('active');
+  });
+}
+
+// ── Mobile Nav ──
+const MOB_MAIN=[
+  {page:'loan-add',icon:'➕',label:'loanAdd'},
+  {page:'payment-add',icon:'💰',label:'paymentAdd'},
+  {page:'loan-list',icon:'🔍',label:'loanList'},
+  {page:'overdue',icon:'🚨',label:'reminderOverdue',badge:true},
+  {page:'__more',icon:'☰',label:'more'},
+];
+function buildMobNav(ap){
+  const inner=document.getElementById('mobNavInner'); if(!inner) return;
+  const isMore=!MOB_MAIN.find(m=>m.page===ap&&m.page!=='__more');
+  inner.innerHTML=MOB_MAIN.map(item=>{
+    const isActive=item.page==='__more'?isMore:item.page===ap;
+    const lbl=item.page==='__more'?(t('more')||'More'):t(item.label);
+    return `<button class="mob-nav-item ${isActive?'active':''}" onclick="${item.page==='__more'?'toggleMobMore()':'closeMobMore();nav(\''+item.page+'\')'}">
+      <span class="mni">${item.icon}</span><span class="mnl">${lbl}</span>
+      ${item.badge?'<span class="mob-badge" id="mobBadge" style="display:none">0</span>':''}
+    </button>`;
+  }).join('');
+}
+window.toggleMobMore=function(){
+  const menu=document.getElementById('mobMoreMenu'),ov=document.getElementById('mobOverlay');
+  const p=currentPage();
+  if(!menu) return;
+  const isOpen=menu.classList.contains('open');
+  if(isOpen){closeMobMore();return;}
+  menu.innerHTML='<div style="width:40px;height:4px;background:#e0e0e0;border-radius:2px;margin:8px auto 12px"></div>'+
+    [{page:'home',icon:'🏠',label:'home'},{page:'extension',icon:'🔄',label:'extension'},
+     {page:'stats',icon:'📊',label:'stats'},{page:'finance',icon:'📈',label:'financeReport'},
+     {page:'expenses',icon:'🧾',label:'expenses'},{page:'tomorrow',icon:'⏰',label:'reminderTomorrow'},
+     {page:'company',icon:'⚙️',label:'company'}]
+    .map(item=>`<button class="mob-more-item" onclick="closeMobMore();nav('${item.page}')">
+      <span style="font-size:20px;width:28px">${item.icon}</span>
+      <div style="font-size:14px;font-weight:500">${t(item.label)}</div>
+    </button>`).join('');
+  menu.classList.add('open'); ov?.classList.add('open');
+};
+window.closeMobMore=function(){
+  document.getElementById('mobMoreMenu')?.classList.remove('open');
+  document.getElementById('mobOverlay')?.classList.remove('open');
+};
+
+// ── Password Protection ──
+const PROTECTED=['stats','finance','expenses'];
+const PWD='morodok888';
+let _unlocked=false;
+function requirePwd(page,cb){
+  if(_unlocked){cb();return;}
+  const lbl={zh:'请输入密码',en:'Enter password',km:'បញ្ចូលពាក្យសម្ងាត់'};
+  const overlay=document.createElement('div');
+  overlay.id='pwdOv';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(13,59,110,.75);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  overlay.innerHTML=`<div style="background:#fff;border-radius:14px;padding:32px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:36px;margin-bottom:12px">🔐</div>
+    <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px">${lbl[_lang]||lbl.zh}</div>
+    <input id="pwdIn" type="password" placeholder="••••••••" autocomplete="off"
+      style="width:100%;border:2px solid #e3f2fd;border-radius:8px;padding:12px;font-size:16px;text-align:center;letter-spacing:4px;outline:none;box-sizing:border-box;margin-bottom:10px"
+      onkeydown="if(event.key==='Enter')document.getElementById('pwdOk').click()">
+    <div id="pwdErr" style="color:#c62828;font-size:12px;min-height:18px;margin-bottom:8px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('pwdOv').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #cfd8dc;background:#fff;color:#546e7a;cursor:pointer;font-family:inherit">${t('cancel')}</button>
+      <button id="pwdOk" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--sky);color:#fff;cursor:pointer;font-family:inherit;font-weight:600" onclick="
+        const v=document.getElementById('pwdIn').value;
+        if(v==='${PWD}'){_unlocked=true;document.getElementById('pwdOv').remove();(${cb.toString()})();}
+        else{const e=document.getElementById('pwdErr');if(e)e.textContent='${_lang==='km'?'ពាក្យសម្ងាត់មិនត្រូវ':'Wrong password'}';
+        const i=document.getElementById('pwdIn');if(i){i.value='';i.style.borderColor='#c62828';i.focus();setTimeout(()=>i.style.borderColor='#e3f2fd',1500);}}
+      ">${_lang==='km'?'បញ្ជាក់':'Confirm'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('pwdIn')?.focus(),100);
+}
+
+// ── Navigation ──
+const PAGES={
+  'home':renderHome,'loan-add':renderLoanAdd,'loan-list':renderLoanList,
+  'payment-add':renderPaymentAdd,'extension':renderExtension,
+  'stats':renderStats,'finance':renderFinance,'expenses':renderExpenses,
+  'overdue':renderOverdue,'tomorrow':renderTomorrow,'company':renderCompany,
+};
+function nav(page){
+  buildSidebar(); buildMobNav(page); closeMobMore();
+  if(PROTECTED.includes(page)&&!_unlocked){requirePwd(page,()=>nav(page));return;}
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===page));
+  if(!_dirty){
+    loadDB().then(r=>{
+      if(r.ok){
+        const fn=PAGES[page],mc=document.getElementById('mainContent');
+        if(fn&&mc){mc.innerHTML=fn();mc.scrollTop=0;initPage(page);}
+        updateBadges();
+      }
+    });
+  } else {
+    const fn=PAGES[page],mc=document.getElementById('mainContent');
+    if(fn&&mc){mc.innerHTML=fn();mc.scrollTop=0;initPage(page);}
+    updateBadges();
+  }
+}
+function initPage(page){
+  if(page==='loan-add') calcLoan();
+  if(page==='payment-add') loadLoanPeriods();
+  if(page==='extension') loadExtLoan();
+}
+function updateBadges(){
+  const td=today();
+  const loans=DB_get('loans')||[];
+  const cnt=loans.reduce((c,l)=>c+l.schedule.filter(p=>!p.paid&&p.dueDate<td).length,0);
+  ['overdueBadge','mobBadge'].forEach(id=>{const b=document.getElementById(id);if(b){b.style.display=cnt>0?'':'none';b.textContent=cnt;}});
+}
+
+// ══════════════════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════════════════
+function renderHome(){
+  const loans=DB_get('loans')||[];
+  const pays=DB_get('payments')||[];
+  const td=today();
+  const active=loans.filter(l=>l.status==='进行中');
+  const overdue=loans.filter(l=>l.schedule.some(p=>!p.paid&&p.dueDate<td));
+  const totalInterest=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
+  const totalPrincipal=pays.reduce((a,p)=>a+(+p.paidPrincipal||0),0);
+  const pendingP=active.reduce((a,l)=>a+(+l.loanAmount-l.schedule.filter(p=>p.paid).reduce((b,p)=>b+(+p.paidPrincipal||0),0)),0);
+  const totalLoanOut=active.reduce((a,l)=>a+(+l.loanAmount),0);
+
+  return `
+  <div class="page-header">
+    <div class="page-title">🏠 ${t('home')}</div>
+    <div class="page-sub">${td} · ${t('synced')}</div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card blue"><span class="stat-icon">📋</span>
+      <div class="stat-label">${t('activeLoans')}</div>
+      <div class="stat-value">${active.length}</div>
+      <div class="stat-sub">${_lang==='km'?'ប្រាក់កម្ចីសរុប':_lang==='en'?'Total loans':' 总贷款'} ${loans.length} ${_lang==='km'?'ករណី':_lang==='en'?'':'笔'}</div>
+    </div>
+    <div class="stat-card amber"><span class="stat-icon">💵</span>
+      <div class="stat-label">${_lang==='km'?'ប្រាក់ចេញ':_lang==='en'?'Outstanding Loans':'在贷总额'}</div>
+      <div class="stat-value">${fmt(totalLoanOut)}</div>
+      <div class="stat-sub">${_lang==='km'?'ប្រាក់ដើមទាំងអស់':_lang==='en'?'All active principals':'所有进行中本金'}</div>
+    </div>
+    <div class="stat-card green"><span class="stat-icon">💰</span>
+      <div class="stat-label">${t('totalInterestCollected')}</div>
+      <div class="stat-value">${fmt(totalInterest)}</div>
+      <div class="stat-sub">${_lang==='km'?'ប្រាក់ដើម':_lang==='en'?'Principal recovered':'+本金'} ${fmt(totalPrincipal)}</div>
+    </div>
+    <div class="stat-card red"><span class="stat-icon">🚨</span>
+      <div class="stat-label">${t('overdueLoans')}</div>
+      <div class="stat-value">${overdue.length}</div>
+      <div class="stat-sub">${t('pendingPrincipal')} ${fmt(pendingP)}</div>
+    </div>
+  </div>
+  ${overdue.length>0?`<div class="alert alert-red">⚠️ ${overdue.length} ${_lang==='km'?'ប្រាក់កម្ចីហួស':_lang==='en'?'overdue loans':'笔逾期贷款'}
+    <button class="btn btn-danger btn-sm" style="margin-left:12px" onclick="nav('overdue')">${_lang==='km'?'មើល':_lang==='en'?'View':'查看'}</button></div>`:''}
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+    ${[
+      ['➕',t('loanAdd'),'loan-add'],
+      ['💰',t('paymentAdd'),'payment-add'],
+      ['🔍',t('loanList'),'loan-list'],
+      ['🔄',t('extension'),'extension'],
+      ['🚨',t('reminderOverdue'),'overdue'],
+    ].map(([i,l,p])=>`
+      <div onclick="nav('${p}')" style="background:#fff;border-radius:12px;padding:18px 12px;text-align:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);transition:all .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <div style="font-size:28px;margin-bottom:8px">${i}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--navy)">${l}</div>
+      </div>`).join('')}
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">${_lang==='km'?'ប្រាក់កម្ចីថ្មី':_lang==='en'?'Recent Loans':'最近贷款'}</div>
+    ${buildLoanTable((loans.slice().reverse().slice(0,5)))}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// LOAN ADD
+// ══════════════════════════════════════════════════════
+function renderLoanAdd(){
+  const condOpts=[['cond100','🆕'],['cond95','✨'],['cond9','⭐'],['cond8','👍'],['cond7','👌']];
+  const storageOpts=['64G','128G','256G','512G','1TB'];
+  const stores=DB_get('stores')||[];
+  return `
+  <div class="page-header">
+    <div class="page-title">➕ ${t('loanAdd')}</div>
+    <div class="page-sub">${_lang==='km'?'ចុះឈ្មោះទូរសព្ទបញ្ចាំ':_lang==='en'?'Register new phone collateral loan':'登记新手机抵押贷款'}</div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">👤 ${_lang==='km'?'ព័ត៌មានអតិថិជន':_lang==='en'?'Customer Info':'客户信息'}</div>
+    <div class="form-grid">
+      <div class="form-group"><label>${t('loanDate')}</label><input type="date" id="lDate" value="${today()}"></div>
+      <div class="form-group"><label>${t('customerName')}</label><input id="lCust" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Full name':'客户全名'}"></div>
+      <div class="form-group"><label>${t('customerPhone')}</label><input id="lPhone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone number':'联系电话'}"></div>
+      <div class="form-group"><label>${t('customerId')}</label><input id="lId" placeholder="${_lang==='km'?'លេខ':_lang==='en'?'ID number':'身份证号'}"></div>
+      <div class="form-group"><label>${t('shopName')}</label><input id="lShop" placeholder="${_lang==='km'?'ហាង':_lang==='en'?'Store':'店铺名称'}"></div>
+      <div class="form-group"><label>${t('salesperson')}</label><input id="lSales" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'业务员'}"></div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--orange)">
+    <div class="card-title" style="margin-bottom:14px">📱 ${_lang==='km'?'ព័ត៌មានទូរសព្ទ':_lang==='en'?'Phone Info':'手机信息'}</div>
+    <div class="form-grid">
+      <div class="form-group"><label>${t('phoneBrand')}</label><input id="lBrand" placeholder="Apple / Samsung / Oppo..."></div>
+      <div class="form-group"><label>${t('phoneModel')}</label><input id="lModel" placeholder="iPhone 15 Pro / S24..."></div>
+      <div class="form-group"><label>${t('phoneStorage')}</label>
+        <select id="lStorage"><option value="">—</option>${storageOpts.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>${t('phoneColor')}</label><input id="lColor" placeholder="${_lang==='km'?'ពណ៌':_lang==='en'?'Color':'颜色'}"></div>
+      <div class="form-group"><label>${t('phoneCondition')}</label>
+        <select id="lCond">
+          <option value="">— ${_lang==='km'?'ជ្រើស':_lang==='en'?'Select':'选择成色'} —</option>
+          ${condOpts.map(([k,e])=>`<option value="${k}">${e} ${t(k)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>${t('phoneImei')}</label><input id="lImei" placeholder="15位数字" maxlength="15"></div>
+      <div class="form-group span3"><label>${t('phoneNote')}</label><input id="lPhoneNote" placeholder="${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Screen condition, scratches, etc.':'屏幕状态、划痕等备注'}"></div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--sky)">
+    <div class="card-title" style="margin-bottom:14px">💵 ${_lang==='km'?'ការកំណត់ប្រាក់កម្ចី':_lang==='en'?'Loan Settings':'贷款设置'}</div>
+    <div class="form-grid">
+      <div class="form-group"><label>${t('loanAmount')}</label>
+        <input type="number" id="lAmount" placeholder="0.00" step="0.01" oninput="calcLoan()">
+      </div>
+      <div class="form-group"><label>${t('monthlyRate')} (%)</label>
+        <input type="number" id="lRate" value="5" step="0.01" placeholder="5.00" oninput="calcLoan()">
+      </div>
+      <div class="form-group"><label>${t('periods')}</label>
+        <select id="lPeriods" onchange="calcLoan()">
+          ${[1,2,3,4,5,6,9,12].map(p=>`<option value="${p}" ${p===3?'selected':''}>${p} ${t('period')}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>${t('firstDue')}</label><input type="date" id="lFirstDue"></div>
+    </div>
+    <div style="background:#e3f2fd;border-radius:8px;padding:14px;margin-top:12px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
+        <div><div style="font-size:11px;color:var(--muted)">${t('monthlyInterest')}</div><div id="cMonthlyInt" style="font-size:18px;font-weight:700;color:var(--sky)">$0.00</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">${t('monthlyPrincipal')}</div><div id="cMonthlyP" style="font-size:18px;font-weight:700;color:var(--navy)">$0.00</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">${t('totalInterest')}</div><div id="cTotalInt" style="font-size:18px;font-weight:700;color:var(--orange)">$0.00</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">${t('totalRepay')}</div><div id="cTotalRepay" style="font-size:18px;font-weight:700;color:var(--green)">$0.00</div></div>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="form-group span3"><label>${t('remarks')}</label><input id="lNote" placeholder="${_lang==='km'?'ស្រេចចិត្ត':_lang==='en'?'Optional':'可选备注'}"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="submitLoan()">${t('saveLoan')}</button>
+      <button class="btn btn-outline" onclick="nav('loan-list')">${t('viewLoans')}</button>
+    </div>
+    <div id="loanMsg" style="margin-top:10px"></div>
+  </div>`;
+}
+
+window.calcLoan=function(){
+  const amt=+(document.getElementById('lAmount')?.value||0);
+  const rate=+(document.getElementById('lRate')?.value||0)/100;
+  const periods=+(document.getElementById('lPeriods')?.value||3);
+  const mInt=amt*rate;
+  const mP=periods>0?amt/periods:0;
+  const tInt=mInt*periods;
+  const tRepay=amt+tInt;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=fmt(v);};
+  set('cMonthlyInt',mInt);set('cMonthlyP',mP);set('cTotalInt',tInt);set('cTotalRepay',tRepay);
+};
+
+window.submitLoan=function(){
+  const cust=document.getElementById('lCust')?.value?.trim();
+  if(!cust){showMsg('loanMsg',t('msgFillCustomer'),'red');return;}
+  const model=document.getElementById('lModel')?.value?.trim();
+  if(!model){showMsg('loanMsg',t('msgFillModel'),'red');return;}
+  const cond=document.getElementById('lCond')?.value;
+  if(!cond){showMsg('loanMsg',t('msgFillCondition'),'red');return;}
+  const amt=+(document.getElementById('lAmount')?.value||0);
+  if(!amt){showMsg('loanMsg',t('msgFillAmount'),'red');return;}
+  const firstDue=document.getElementById('lFirstDue')?.value;
+  if(!firstDue){showMsg('loanMsg',t('msgFillDue'),'red');return;}
+  const rate=+(document.getElementById('lRate')?.value||0)/100;
+  const periods=+(document.getElementById('lPeriods')?.value||3);
+  const mInt=amt*rate, mP=amt/periods;
+  // Build schedule
+  const schedule=[];
+  let dueDate=new Date(firstDue);
+  for(let i=0;i<periods;i++){
+    schedule.push({
+      period:i+1,
+      dueDate:dueDate.toISOString().slice(0,10),
+      principalDue:parseFloat(mP.toFixed(2)),
+      interestDue:parseFloat(mInt.toFixed(2)),
+      paid:false,paidDate:null,
+      paidPrincipal:0,paidInterest:0,penalty:0
+    });
+    dueDate=new Date(dueDate); dueDate.setMonth(dueDate.getMonth()+1);
+  }
+  const loan={
+    id:newId(),
+    date:document.getElementById('lDate')?.value||today(),
+    customer:cust,
+    customerPhone:document.getElementById('lPhone')?.value?.trim()||'',
+    customerId:document.getElementById('lId')?.value?.trim()||'',
+    shopName:document.getElementById('lShop')?.value?.trim()||'',
+    salesperson:document.getElementById('lSales')?.value?.trim()||'',
+    phoneBrand:document.getElementById('lBrand')?.value?.trim()||'',
+    phoneModel:model,
+    phoneStorage:document.getElementById('lStorage')?.value||'',
+    phoneColor:document.getElementById('lColor')?.value?.trim()||'',
+    phoneCondition:cond,
+    phoneImei:document.getElementById('lImei')?.value?.trim()||'',
+    phoneNote:document.getElementById('lPhoneNote')?.value?.trim()||'',
+    loanAmount:amt,monthlyRate:+(document.getElementById('lRate')?.value||0),
+    periods,firstDue,
+    monthlyInterest:parseFloat(mInt.toFixed(2)),
+    monthlyPrincipal:parseFloat(mP.toFixed(2)),
+    totalInterest:parseFloat((mInt*periods).toFixed(2)),
+    note:document.getElementById('lNote')?.value?.trim()||'',
+    schedule,status:'进行中',extensions:[]
+  };
+  const loans=DB_get('loans')||[];
+  loans.push(loan); DB_set('loans',loans);
+  showMsg('loanMsg',`✅ ${t('saved')} #${loan.id} — ${cust}`,'green');
+  ['lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['lAmount','lFirstDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('lStorage').value='';
+  document.getElementById('lCond').value='';
+  document.getElementById('lPeriods').value='3';
+  calcLoan(); updateBadges();
+};
+
+// ══════════════════════════════════════════════════════
+// LOAN LIST
+// ══════════════════════════════════════════════════════
+function renderLoanList(){
+  const loans=DB_get('loans')||[];
+  return `
+  <div class="page-header"><div class="page-title">🔍 ${t('loanListTitle')}</div></div>
+  <div class="search-row">
+    <input id="lSearch" placeholder="${t('searchPlaceholder')}" oninput="filterLoans()">
+    <select id="lStatusFilter" onchange="filterLoans()" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none">
+      <option value="">${t('allStatus')}</option>
+      <option value="进行中">${t('active')}</option>
+      <option value="已结清">${t('settled')}</option>
+      <option value="已续期">${t('extended')}</option>
+    </select>
+    <button class="btn btn-success" onclick="nav('loan-add')">${t('newLoanBtn')}</button>
+  </div>
+  <div id="loanTableWrap">${buildLoanTable(loans.slice().reverse())}</div>`;
+}
+window.filterLoans=function(){
+  const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
+  const st=document.getElementById('lStatusFilter')?.value||'';
+  let list=DB_get('loans')||[];
+  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
+  if(st) list=list.filter(l=>l.status===st);
+  const wrap=document.getElementById('loanTableWrap');
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
+};
+function buildLoanTable(loans){
+  if(!loans.length) return `<div class="empty-state"><div class="ei">📋</div><p>${t('noRecord')}</p></div>`;
+  const td=today();
+  return `<div class="card"><div class="table-wrap"><table>
+    <tr><th>${t('colNo')}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
+      <th>${t('colLoanAmt')}</th><th>${t('colRate')}</th><th>${t('colMonthly')}</th>
+      <th>${t('colProgress')}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>
+    ${loans.map(l=>{
+      const paid=l.schedule.filter(p=>p.paid).length;
+      const isOverdue=l.status==='进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
+      const condColors={cond100:'cond-new',cond95:'cond-9',cond9:'cond-9',cond8:'cond-8',cond7:'cond-7'};
+      return `<tr>
+        <td><a href="#" onclick="viewLoan(${l.id});return false" class="text-blue fw700">#${l.id}</a></td>
+        <td>${l.date}</td>
+        <td>
+          <div class="fw700">${esc(l.customer)}</div>
+          <div style="font-size:11px;color:var(--muted)">${esc(l.customerPhone||'')}</div>
+        </td>
+        <td>
+          <div>${esc(l.phoneModel)} ${esc(l.phoneStorage||'')}</div>
+          <div><span class="badge ${condColors[l.phoneCondition]||'badge-gray'}" style="font-size:10px">${t(l.phoneCondition)||l.phoneCondition}</span></div>
+        </td>
+        <td style="font-size:11px;color:var(--muted)">${esc(l.phoneImei||'—')}</td>
+        <td class="fw700 text-amber">${fmt(l.loanAmount)}</td>
+        <td>${l.monthlyRate}%</td>
+        <td class="text-sky fw700">${fmt(l.monthlyInterest)}</td>
+        <td>
+          <div style="font-size:12px">${paid}/${l.periods} ${t('period')}</div>
+          <div style="background:#e3f2fd;height:5px;border-radius:3px;width:80px;margin-top:4px">
+            <div style="background:${isOverdue?'var(--red)':'var(--sky)'};height:5px;border-radius:3px;width:${paid/l.periods*100}%"></div>
+          </div>
+        </td>
+        <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.id})" style="margin-left:4px">${t('deleteBtn')}</button>
+        </td>
+      </tr>`;
+    }).join('')}
+  </table></div></div>`;
+}
+window.viewLoan=function(id){
+  const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
+  const condNames={cond100:'🆕全新',cond95:'✨99成新',cond9:'⭐9成新',cond8:'👍8成新',cond7:'👌7成以下'};
+  const td=today();
+  showModal(`📋 #${l.id} — ${esc(l.customer)}`,`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:13px">
+      <div style="background:#f0f7ff;padding:10px;border-radius:8px">
+        <div style="font-size:11px;color:var(--muted)">${t('phoneBrand')} / ${t('phoneModel')}</div>
+        <div class="fw700">${esc(l.phoneBrand||'')} ${esc(l.phoneModel)} ${esc(l.phoneStorage||'')} ${esc(l.phoneColor||'')}</div>
+        <div style="margin-top:4px"><span class="badge">${condNames[l.phoneCondition]||l.phoneCondition}</span></div>
+        ${l.phoneImei?`<div style="font-size:11px;color:var(--muted);margin-top:4px">IMEI: ${esc(l.phoneImei)}</div>`:''}
+        ${l.phoneNote?`<div style="font-size:11px;color:var(--muted)">${esc(l.phoneNote)}</div>`:''}
+      </div>
+      <div style="background:#f0faf0;padding:10px;border-radius:8px">
+        <div style="font-size:11px;color:var(--muted)">${t('loanAmount')} / ${t('monthlyRate')}</div>
+        <div class="fw700 text-amber" style="font-size:16px">${fmt(l.loanAmount)}</div>
+        <div style="font-size:12px">${t('monthlyInterest')} <b>${fmt(l.monthlyInterest)}</b> / ${t('period')}</div>
+        <div style="font-size:12px">${t('totalInterest')} <b>${fmt(l.totalInterest)}</b></div>
+        <div style="font-size:12px">${l.monthlyRate}% ${_lang==='en'?'monthly rate':'月利率'}</div>
+      </div>
+    </div>
+    ${l.phoneNote||l.note?`<div class="alert alert-blue" style="margin-bottom:10px">${esc(l.phoneNote||'')} ${l.note?'· '+esc(l.note):''}</div>`:''}
+    <div class="table-wrap"><table>
+      <tr><th>${t('period')}</th><th>${t('colDate')}</th><th>${t('paidPrincipal')}</th><th>${t('paidInterest')}</th><th>${_lang==='km'?'ប្រាក់ពិន័យ':_lang==='en'?'Late Fee':'滞纳金'}</th><th>${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Status':'状态'}</th></tr>
+      ${l.schedule.map(p=>{
+        const isOv=!p.paid&&p.dueDate<td;
+        const days=isOv?daysDiff(p.dueDate,td):0;
+        return `<tr style="${p.paid?'':'background:#fffde7'}">
+          <td class="fw700">${p.period}</td>
+          <td>${p.dueDate}</td>
+          <td>${p.paid?fmt(p.paidPrincipal):fmt(p.principalDue)}</td>
+          <td>${p.paid?fmt(p.paidInterest):fmt(p.interestDue)}</td>
+          <td>${p.penalty>0?`<span class="text-red">${fmt(p.penalty)}</span>`:'—'}</td>
+          <td>${p.paid?`<span class="badge badge-green">${p.paidDate}</span>`:isOv?`<span class="badge badge-red">${t('daysOverdue')} ${days} ${t('days')}</span>`:`<span class="badge badge-gray">${_lang==='km'?'រង់ចាំ':_lang==='en'?'Pending':'待还'}</span>`}</td>
+        </tr>`;
+      }).join('')}
+    </table></div>
+  `);
+};
+window.deleteLoan=function(id){
+  const loans=DB_get('loans')||[];
+  const l=loans.find(x=>x.id===id); if(!l) return;
+  if(!confirm(`${t('deleteBtn')} #${id} — ${l.customer}?`)) return;
+  DB_set('loans',loans.filter(x=>x.id!==id));
+  filterLoans();
+};
+
+// ══════════════════════════════════════════════════════
+// PAYMENT
+// ══════════════════════════════════════════════════════
+function renderPaymentAdd(){
+  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('');
+  const pays=(DB_get('payments')||[]).slice().reverse();
+  return `
+  <div class="page-header"><div class="page-title">💰 ${t('paymentTitle')}</div></div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group span3"><label>${t('selectLoan')}</label>
+        <select id="pLoan" onchange="loadLoanPeriods()">${opts||`<option>${t('noRecord')}</option>`}</select>
+      </div>
+      <div class="form-group"><label>${t('paymentDate')}</label><input type="date" id="pDate" value="${today()}"></div>
+      <div class="form-group"><label>${t('payPeriod')}</label><select id="pPeriod" onchange="autoFillPayment()"></select></div>
+      <div class="form-group"><label>${t('paidInterest')}</label><input type="number" id="pInterest" placeholder="0.00" step="0.01" oninput="calcPayTotal()"></div>
+      <div class="form-group"><label>${t('paidPrincipal')}</label><input type="number" id="pPrincipal" placeholder="0.00" step="0.01" oninput="calcPayTotal()"></div>
+      <div class="form-group"><label>${t('penalty')}</label><input type="number" id="pPenalty" value="0" step="0.01" oninput="calcPayTotal()"></div>
+      <div class="form-group"><label>${t('totalPayment')}</label><input id="pTotal" readonly style="background:#e8f5e9;font-weight:700;color:var(--green);font-size:15px"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="submitPayment()">${t('confirmPayment')}</button>
+    </div>
+    <div id="payMsg" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">${t('recentPayments')}</div>
+    <div id="payTableWrap">${buildPayTable(pays)}</div>
+  </div>`;
+}
+window.loadLoanPeriods=function(){
+  const id=+(document.getElementById('pLoan')?.value||0);
+  const l=(DB_get('loans')||[]).find(x=>x.id===id);
+  const sel=document.getElementById('pPeriod'); if(!l||!sel) return;
+  sel.innerHTML=l.schedule.filter(p=>!p.paid).map(p=>`<option value="${p.period}">${p.period} ${t('period')} (${p.dueDate})</option>`).join('');
+  autoFillPayment();
+};
+window.autoFillPayment=function(){
+  const id=+(document.getElementById('pLoan')?.value||0);
+  const period=+(document.getElementById('pPeriod')?.value||0);
+  const l=(DB_get('loans')||[]).find(x=>x.id===id);
+  const p=l?.schedule.find(x=>x.period===period);
+  if(p){
+    const pi=document.getElementById('pPrincipal'), ii=document.getElementById('pInterest');
+    if(pi) pi.value=p.principalDue.toFixed(2);
+    if(ii) ii.value=p.interestDue.toFixed(2);
+    calcPayTotal();
+  }
+};
+window.calcPayTotal=function(){
+  const p=+(document.getElementById('pPrincipal')?.value||0);
+  const i=+(document.getElementById('pInterest')?.value||0);
+  const pe=+(document.getElementById('pPenalty')?.value||0);
+  const tot=document.getElementById('pTotal');
+  if(tot) tot.value=fmt(p+i+pe);
+};
+window.submitPayment=function(){
+  const loanId=+(document.getElementById('pLoan')?.value||0);
+  if(!loanId){showMsg('payMsg',t('msgSelectLoan'),'red');return;}
+  const periodNo=+(document.getElementById('pPeriod')?.value||0);
+  const pDate=document.getElementById('pDate')?.value||today();
+  const principal=+(document.getElementById('pPrincipal')?.value||0);
+  const interest=+(document.getElementById('pInterest')?.value||0);
+  const penalty=+(document.getElementById('pPenalty')?.value||0);
+  if(!principal&&!interest){showMsg('payMsg',t('msgFillAmount'),'red');return;}
+  const loans=DB_get('loans')||[];
+  const li=loans.findIndex(l=>l.id===loanId); if(li<0) return;
+  const l=loans[li];
+  const pi=l.schedule.findIndex(p=>p.period===periodNo); if(pi<0) return;
+  if(l.schedule[pi].paid){showMsg('payMsg',t('msgPeriodPaid'),'amber');return;}
+  l.schedule[pi]={...l.schedule[pi],paid:true,paidDate:pDate,paidPrincipal:principal,paidInterest:interest,penalty};
+  if(l.schedule.every(p=>p.paid)) l.status='已结清';
+  loans[li]=l; DB_set('loans',loans);
+  const pays=DB_get('payments')||[];
+  pays.push({id:newId(),loanId,customer:l.customer,period:periodNo,date:pDate,paidPrincipal:principal,paidInterest:interest,penalty});
+  DB_set('payments',pays);
+  showMsg('payMsg',`✅ #${loanId} ${l.customer} — ${t('period')} ${periodNo} · ${fmt(principal+interest+penalty)}`,'green');
+  document.getElementById('pPenalty').value='0';
+  document.getElementById('pTotal').value='';
+  loadLoanPeriods(); updateBadges();
+  const wrap=document.getElementById('payTableWrap');
+  if(wrap) wrap.innerHTML=buildPayTable((DB_get('payments')||[]).slice().reverse());
+};
+function buildPayTable(pays){
+  if(!pays.length) return `<div class="empty-state"><div class="ei">💰</div><p>${t('noRecord')}</p></div>`;
+  return `<div class="table-wrap"><table>
+    <tr><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>#</th><th>${t('period')}</th>
+      <th>${t('paidInterest')}</th><th>${t('paidPrincipal')}</th><th>${t('penalty')}</th><th>${t('totalPayment')}</th>
+      <th>${t('colAction')}</th></tr>
+    ${pays.map(p=>`<tr>
+      <td>${p.date}</td>
+      <td class="fw700">${esc(p.customer)}</td>
+      <td class="text-blue">#${p.loanId}</td>
+      <td>${p.period}</td>
+      <td class="text-sky fw700">${fmt(p.paidInterest)}</td>
+      <td>${fmt(p.paidPrincipal)}</td>
+      <td>${p.penalty>0?`<span class="text-red">${fmt(p.penalty)}</span>`:'—'}</td>
+      <td class="fw700 text-green">${fmt((+p.paidPrincipal)+(+p.paidInterest)+(+p.penalty||0))}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})">${t('deleteBtn')}</button></td>
+    </tr>`).join('')}
+  </table></div>`;
+}
+window.deletePayment=function(id){
+  const pays=DB_get('payments')||[];
+  const pay=pays.find(p=>p.id===id); if(!pay) return;
+  if(!confirm(`${t('deleteBtn')} — ${pay.customer} ${t('period')} ${pay.period}?`)) return;
+  DB_set('payments',pays.filter(p=>p.id!==id));
+  const loans=DB_get('loans')||[];
+  const li=loans.findIndex(l=>l.id===pay.loanId);
+  if(li>=0){
+    const pi=loans[li].schedule.findIndex(p=>p.period===pay.period);
+    if(pi>=0){
+      loans[li].schedule[pi]={...loans[li].schedule[pi],paid:false,paidDate:null,paidPrincipal:0,paidInterest:0,penalty:0};
+      if(loans[li].status==='已结清') loans[li].status='进行中';
+      DB_set('loans',loans);
+    }
+  }
+  const wrap=document.getElementById('payTableWrap');
+  if(wrap) wrap.innerHTML=buildPayTable((DB_get('payments')||[]).slice().reverse());
+  showMsg('payMsg','✅ '+t('saved'),'green');
+};
+
+// ══════════════════════════════════════════════════════
+// EXTENSION 续期
+// ══════════════════════════════════════════════════════
+function renderExtension(){
+  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} · ${esc(l.phoneModel)} · ${fmt(l.loanAmount)}</option>`).join('');
+  const exts=(DB_get('extensions')||[]).slice().reverse();
+  return `
+  <div class="page-header">
+    <div class="page-title">🔄 ${t('extensionTitle')}</div>
+    <div class="page-sub">${t('extensionSub')}</div>
+  </div>
+  <div class="card" style="border-left:4px solid var(--purple)">
+    <div class="form-grid">
+      <div class="form-group span3"><label>${t('selectLoanExt')}</label>
+        <select id="extLoan" onchange="loadExtLoan()">${opts||`<option>${t('noRecord')}</option>`}</select>
+      </div>
+    </div>
+    <div id="extInfo" style="background:#f3e5f5;border-radius:8px;padding:12px;margin:12px 0;display:none">
+      <div id="extInfoContent"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>${t('paymentDate')}</label><input type="date" id="extDate" value="${today()}"></div>
+      <div class="form-group"><label>${t('extPeriods')}</label>
+        <select id="extPeriods" onchange="calcExtension()">${[1,2,3,4,5,6].map(p=>`<option value="${p}">${p} ${t('period')}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>${t('extFee')}</label><input type="number" id="extFee" value="0" step="0.01" placeholder="0.00"></div>
+      <div class="form-group"><label>${t('newMonthlyInterest')}</label><input id="extMonthlyInt" readonly style="background:#f3e5f5;font-weight:700;color:var(--purple)"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-purple" onclick="submitExtension()">${t('confirmExtension')}</button>
+    </div>
+    <div id="extMsg" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">🔄 ${_lang==='km'?'ប្រវត្តិ':_lang==='en'?'Extension History':'续期记录'}</div>
+    ${exts.length?`<div class="table-wrap"><table>
+      <tr><th>${t('colDate')}</th><th>#</th><th>${t('colCustomer')}</th>
+        <th>${_lang==='km'?'ខែ':_lang==='en'?'Ext. Periods':'续期期数'}</th>
+        <th>${t('extFee')}</th><th>${t('remainPrincipal')}</th>
+        <th>${t('newMonthlyInterest')}</th></tr>
+      ${exts.map(e=>`<tr>
+        <td>${e.date}</td><td class="text-blue">#${e.loanId}</td>
+        <td class="fw700">${esc(e.customer)}</td>
+        <td><span class="badge badge-purple">+${e.extPeriods} ${t('period')}</span></td>
+        <td>${e.extFee>0?fmt(e.extFee):'—'}</td>
+        <td class="text-amber fw700">${fmt(e.remainPrincipal)}</td>
+        <td class="text-sky fw700">${fmt(e.newMonthlyInterest)}</td>
+      </tr>`).join('')}
+    </table></div>`:`<div class="empty-state"><div class="ei">🔄</div><p>${t('noRecord')}</p></div>`}
+  </div>`;
+}
+window.loadExtLoan=function(){
+  const id=+(document.getElementById('extLoan')?.value||0);
+  const l=(DB_get('loans')||[]).find(x=>x.id===id);
+  const info=document.getElementById('extInfo'), content=document.getElementById('extInfoContent');
+  if(!l||!info||!content){if(info)info.style.display='none';return;}
+  const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
+  const unpaid=l.schedule.filter(p=>!p.paid).length;
+  content.innerHTML=`
+    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px">
+      <span>📱 <b>${esc(l.phoneModel)}</b> ${esc(l.phoneStorage||'')} · ${t(l.phoneCondition)||''}</span>
+      <span>💵 ${t('remainPrincipal')}: <b class="text-amber">${fmt(remainP)}</b></span>
+      <span>📅 ${_lang==='km'?'ខែនៅសល់':_lang==='en'?'Remaining periods':'剩余期数'}: <b>${unpaid} ${t('period')}</b></span>
+      <span>💰 ${t('monthlyRate')}: <b>${l.monthlyRate}%</b></span>
+    </div>`;
+  info.style.display='';
+  document.getElementById('extLoanRemain')?.setAttribute('data-remain',remainP);
+  calcExtension();
+};
+window.calcExtension=function(){
+  const id=+(document.getElementById('extLoan')?.value||0);
+  const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
+  const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
+  const mInt=remainP*(l.monthlyRate/100);
+  const el=document.getElementById('extMonthlyInt'); if(el) el.value=fmt(mInt);
+};
+window.submitExtension=function(){
+  const id=+(document.getElementById('extLoan')?.value||0);
+  if(!id){showMsg('extMsg',t('msgSelectLoan'),'red');return;}
+  const loans=DB_get('loans')||[];
+  const li=loans.findIndex(l=>l.id===id); if(li<0) return;
+  const l=loans[li];
+  const extPeriods=+(document.getElementById('extPeriods')?.value||1);
+  const extFee=+(document.getElementById('extFee')?.value||0);
+  const extDate=document.getElementById('extDate')?.value||today();
+  const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
+  const mInt=parseFloat((remainP*(l.monthlyRate/100)).toFixed(2));
+  const mP=parseFloat((remainP/extPeriods).toFixed(2));
+  // Get last due date
+  const lastPaid=l.schedule.filter(p=>p.paid);
+  let startDate=lastPaid.length>0?new Date(lastPaid[lastPaid.length-1].dueDate):new Date();
+  startDate.setMonth(startDate.getMonth()+1);
+  // Add new periods to schedule
+  const maxPeriod=l.schedule.length;
+  for(let i=0;i<extPeriods;i++){
+    l.schedule.push({
+      period:maxPeriod+i+1,
+      dueDate:startDate.toISOString().slice(0,10),
+      principalDue:mP,interestDue:mInt,
+      paid:false,paidDate:null,paidPrincipal:0,paidInterest:0,penalty:0
+    });
+    startDate=new Date(startDate); startDate.setMonth(startDate.getMonth()+1);
+  }
+  l.periods+=extPeriods;
+  l.status='进行中';
+  if(!l.extensions) l.extensions=[];
+  l.extensions.push({date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
+  loans[li]=l; DB_set('loans',loans);
+  const exts=DB_get('extensions')||[];
+  exts.push({id:newId(),loanId:id,customer:l.customer,date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
+  DB_set('extensions',exts);
+  showMsg('extMsg',`✅ #${id} ${l.customer} — ${_lang==='km'?'បន្ត':_lang==='en'?'Extended +':'+'}${extPeriods} ${t('period')}`,'green');
+  setTimeout(()=>nav('extension'),600);
+};
+
+// ══════════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════════
+function renderStats(){
+  const pays=DB_get('payments')||[];
+  const loans=DB_get('loans')||[];
+  const td=today();
+  const tInt=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
+  const tP=pays.reduce((a,p)=>a+(+p.paidPrincipal||0),0);
+  const tPen=pays.reduce((a,p)=>a+(+p.penalty||0),0);
+  const active=loans.filter(l=>l.status==='进行中');
+  const pendingP=active.reduce((a,l)=>a+(+l.loanAmount-l.schedule.filter(p=>p.paid).reduce((b,p)=>b+(+p.paidPrincipal||0),0)),0);
+  const byMonth={};
+  pays.forEach(p=>{const m=p.date.slice(0,7);if(!byMonth[m])byMonth[m]={int:0,principal:0,penalty:0,count:0};
+    byMonth[m].int+=(+p.paidInterest||0);byMonth[m].principal+=(+p.paidPrincipal||0);byMonth[m].penalty+=(+p.penalty||0);byMonth[m].count++;});
+  const months=Object.keys(byMonth).sort().reverse();
+  return `
+  <div class="page-header"><div class="page-title">📊 ${t('statsTitle')}</div></div>
+  <div class="stats-grid">
+    <div class="stat-card green"><span class="stat-icon">💰</span><div class="stat-label">${t('totalInterestCollected')}</div><div class="stat-value">${fmt(tInt)}</div><div class="stat-sub">${t('totalRepay')}: ${fmt(tInt+tP)}</div></div>
+    <div class="stat-card blue"><span class="stat-icon">💵</span><div class="stat-label">${t('totalPrincipalCollected')}</div><div class="stat-value">${fmt(tP)}</div></div>
+    <div class="stat-card red"><span class="stat-icon">⚠️</span><div class="stat-label">${_lang==='km'?'ប្រាក់ពិន័យ':_lang==='en'?'Late Fees':'滞纳金'}</div><div class="stat-value">${fmt(tPen)}</div></div>
+    <div class="stat-card amber"><span class="stat-icon">⏳</span><div class="stat-label">${t('pendingPrincipal')}</div><div class="stat-value">${fmt(pendingP)}</div><div class="stat-sub">${active.length} ${_lang==='km'?'ករណី':_lang==='en'?'active':'笔进行中'}</div></div>
+  </div>
+  <div class="card"><div class="card-title" style="margin-bottom:14px">📅 ${t('monthlyStats')}</div>
+    ${months.length?`<div class="table-wrap"><table>
+      <tr><th>${_lang==='km'?'ខែ':_lang==='en'?'Month':'月份'}</th><th>${_lang==='km'?'ចំនួន':_lang==='en'?'Records':'笔数'}</th><th>${t('paidInterest')}</th><th>${t('paidPrincipal')}</th><th>${t('penalty')}</th><th>${t('totalPayment')}</th></tr>
+      ${months.map(m=>`<tr>
+        <td class="fw700">${m}</td><td>${byMonth[m].count}</td>
+        <td class="text-sky fw700">${fmt(byMonth[m].int)}</td>
+        <td>${fmt(byMonth[m].principal)}</td>
+        <td>${byMonth[m].penalty>0?`<span class="text-red">${fmt(byMonth[m].penalty)}</span>`:'—'}</td>
+        <td class="fw700 text-green">${fmt(byMonth[m].int+byMonth[m].principal+byMonth[m].penalty)}</td>
+      </tr>`).join('')}
+      <tr style="font-weight:700;background:#f0f4f8;border-top:2px solid var(--border)">
+        <td>${t('totalRow')}</td><td>${pays.length}</td>
+        <td class="text-sky">${fmt(tInt)}</td><td>${fmt(tP)}</td>
+        <td class="text-red">${fmt(tPen)}</td><td class="text-green">${fmt(tInt+tP+tPen)}</td>
+      </tr>
+    </table></div>`:`<div class="empty-state"><div class="ei">📊</div><p>${t('noRecord')}</p></div>`}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// FINANCE REPORT
+// ══════════════════════════════════════════════════════
+function renderFinance(){
+  const loans=DB_get('loans')||[];
+  const pays=DB_get('payments')||[];
+  const expenses=DB_get('expenses')||[];
+  const td=today();
+  const m=td.slice(0,7);
+  const mPays=pays.filter(p=>p.date.slice(0,7)===m);
+  const mLoans=loans.filter(l=>l.date.slice(0,7)===m);
+  const mExp=expenses.filter(e=>e.date.slice(0,7)===m).reduce((a,e)=>a+(+e.amount),0);
+  const mInt=mPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
+  const mPen=mPays.reduce((a,p)=>a+(+p.penalty||0),0);
+  const mProfit=mInt+mPen-mExp;
+  const tInt=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
+  const tExp=expenses.reduce((a,e)=>a+(+e.amount),0);
+  return `
+  <div class="page-header"><div class="page-title">📈 ${t('financeTitle')}</div></div>
+  <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px">📅 ${m} ${_lang==='km'?'ខែនេះ':_lang==='en'?'This Month':'本月'}</div>
+  <div class="stats-grid">
+    <div class="stat-card blue"><span class="stat-icon">📋</span><div class="stat-label">${_lang==='km'?'ប្រាក់កម្ចីថ្មី':_lang==='en'?'New Loans':'新增贷款'}</div><div class="stat-value">${mLoans.length}</div><div class="stat-sub">${fmt(mLoans.reduce((a,l)=>a+(+l.loanAmount),0))}</div></div>
+    <div class="stat-card green"><span class="stat-icon">💰</span><div class="stat-label">${_lang==='km'?'ការប្រាក់ប្រចាំខែ':_lang==='en'?'Monthly Interest':'本月利息'}</div><div class="stat-value">${fmt(mInt)}</div></div>
+    <div class="stat-card red"><span class="stat-icon">🧾</span><div class="stat-label">${_lang==='km'?'ការចំណាយ':_lang==='en'?'Expenses':'本月开支'}</div><div class="stat-value">${fmt(mExp)}</div></div>
+    <div class="stat-card ${mProfit>=0?'green':'red'}"><span class="stat-icon">📈</span><div class="stat-label">${_lang==='km'?'ប្រាក់ចំណេញ':_lang==='en'?'Net Profit':'本月净利润'}</div><div class="stat-value" style="color:${mProfit>=0?'var(--green)':'var(--red)'}">${fmt(mProfit)}</div><div class="stat-sub">${_lang==='km'?'ការប្រាក់':_lang==='en'?'Interest':'利息'} − ${_lang==='km'?'ការចំណាយ':_lang==='en'?'Expenses':'开支'}</div></div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,#0d3b6e,#1565c0);color:#fff;margin-bottom:14px">
+    <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px">${_lang==='km'?'សរុបទាំងអស់':_lang==='en'?'All-time Totals':'全期累计'}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+      <div><div style="font-size:11px;color:rgba(255,255,255,.55)">${_lang==='km'?'ការប្រាក់':_lang==='en'?'Total Interest':'利息总收入'}</div><div style="font-size:20px;font-weight:700">${fmt(tInt)}</div></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,.55)">${_lang==='km'?'ការចំណាយ':_lang==='en'?'Total Expenses':'总开支'}</div><div style="font-size:20px;font-weight:700">${fmt(tExp)}</div></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,.55)">${_lang==='km'?'ចំណេញ':_lang==='en'?'Net Profit':'净利润'}</div><div style="font-size:20px;font-weight:700">${fmt(tInt-tExp)}</div></div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// REMINDERS
+// ══════════════════════════════════════════════════════
+function renderOverdue(){
+  const loans=DB_get('loans')||[];
+  const td=today();
+  const items=[];
+  loans.filter(l=>l.status==='进行中').forEach(l=>{
+    l.schedule.filter(p=>!p.paid&&p.dueDate<td).forEach(p=>{
+      items.push({l,p,days:daysDiff(p.dueDate,td)});
+    });
+  });
+  items.sort((a,b)=>b.days-a.days);
+  return `
+  <div class="page-header"><div class="page-title">🚨 ${t('overdueTitle')}</div></div>
+  ${items.length===0?`<div class="alert alert-green">✅ ${t('noOverdue')}</div>`:
+    `<div class="alert alert-red">⚠️ ${items.length} ${_lang==='km'?'ករណីហួស':_lang==='en'?'overdue':'笔逾期'}</div>`}
+  ${items.length===0?'':items.map(({l,p,days})=>`
+    <div class="card" style="border-left:4px solid var(--red);margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="fw700" style="font-size:15px">${esc(l.customer)} <span class="text-muted" style="font-size:12px">${l.customerPhone||''}</span></div>
+          <div style="font-size:13px;margin-top:4px">📱 ${esc(l.phoneModel)} ${esc(l.phoneStorage||'')} · IMEI ${esc(l.phoneImei||'—')}</div>
+          <div style="font-size:12px;color:var(--muted)">#${l.id} · ${t('period')} ${p.period} · ${_lang==='km'?'ដល់កំណត់':_lang==='en'?'Due':'到期'} ${p.dueDate}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="badge badge-red" style="font-size:13px;padding:6px 12px">${days} ${t('days')} ${t('daysOverdue')}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);margin-top:6px">${fmt(p.principalDue+p.interestDue)}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-success btn-sm" onclick="nav('payment-add')">${t('confirmPayment')}</button></div>
+    </div>`).join('')}`;
+}
+function renderTomorrow(){
+  const loans=DB_get('loans')||[];
+  const td=today();
+  const tom=new Date(td); tom.setDate(tom.getDate()+1);
+  const tomorrow=tom.toISOString().slice(0,10);
+  const items=[];
+  loans.filter(l=>l.status==='进行中').forEach(l=>{
+    l.schedule.filter(p=>!p.paid&&p.dueDate===tomorrow).forEach(p=>items.push({l,p}));
+  });
+  return `
+  <div class="page-header"><div class="page-title">⏰ ${t('tomorrowTitle')}</div></div>
+  ${items.length===0?`<div class="alert alert-green">✅ ${_lang==='km'?'គ្មានដល់កំណត់ស្អែក':_lang==='en'?'No loans due tomorrow':'明日无到期贷款'}</div>`:''}
+  ${items.map(({l,p})=>`
+    <div class="card" style="border-left:4px solid var(--orange);margin-bottom:10px">
+      <div class="fw700" style="font-size:15px">${esc(l.customer)}</div>
+      <div style="font-size:13px;margin-top:4px">📱 ${esc(l.phoneModel)} · #${l.id} · ${t('period')} ${p.period}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--orange);margin-top:6px">${fmt(p.principalDue+p.interestDue)}</div>
+    </div>`).join('')}`;
+}
+
+// ══════════════════════════════════════════════════════
+// EXPENSES
+// ══════════════════════════════════════════════════════
+function renderExpenses(){
+  const expenses=DB_get('expenses')||[];
+  const total=expenses.reduce((a,e)=>a+(+e.amount),0);
+  const cats=[_lang==='km'?'ថ្លៃជួល':'房租',_lang==='km'?'ប្រាក់ខែ':'员工工资','税费',_lang==='km'?'ភ្លើង/ទឹក':'水电','通讯费','交通费',_lang==='km'?'អាហារ':'餐饮','维修','广告','办公用品',_lang==='km'?'ផ្សេងទៀត':'其他'];
+  return `
+  <div class="page-header"><div class="page-title">🧾 ${t('expensesTitle')}</div></div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">➕ ${t('addExpense')}</div>
+    <div class="form-grid">
+      <div class="form-group"><label>${t('expDate')}</label><input type="date" id="exDate" value="${today()}"></div>
+      <div class="form-group"><label>${t('expCat')}</label>
+        <select id="exCat">${cats.map(c=>`<option>${c}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>${t('expAmt')}</label><input type="number" id="exAmt" placeholder="0.00" step="0.01"></div>
+      <div class="form-group span3"><label>${t('expNote')}</label><input id="exNote" placeholder="${_lang==='km'?'ការពិពណ៌នា':_lang==='en'?'Description':'说明（可选）'}"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-success" onclick="submitExpense()">${t('saveExpense')}</button></div>
+    <div id="exMsg" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">${_lang==='km'?'ករណីទាំងអស់':_lang==='en'?'All Expenses':'开支记录'} · ${_lang==='km'?'សរុប':_lang==='en'?'Total':'合计'} ${fmt(total)}</div>
+    </div>
+    ${expenses.length?`<div class="table-wrap"><table>
+      <tr><th>${t('expDate')}</th><th>${t('expCat')}</th><th>${t('expAmt')}</th><th>${t('expNote')}</th><th>${t('colAction')}</th></tr>
+      ${expenses.slice().reverse().map(e=>`<tr>
+        <td>${e.date}</td><td><span class="badge badge-gray">${esc(e.cat)}</span></td>
+        <td class="fw700 text-red">${fmt(e.amount)}</td>
+        <td style="color:var(--muted);font-size:12px">${esc(e.note||'—')}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteExpense(${e.id})">${t('deleteBtn')}</button></td>
+      </tr>`).join('')}
+    </table></div>`:`<div class="empty-state"><div class="ei">🧾</div><p>${t('noRecord')}</p></div>`}
+  </div>`;
+}
+window.submitExpense=function(){
+  const amount=+(document.getElementById('exAmt')?.value||0);
+  if(!amount){showMsg('exMsg',t('msgFillAmount'),'red');return;}
+  const expenses=DB_get('expenses')||[];
+  expenses.push({id:newId(),date:document.getElementById('exDate')?.value||today(),
+    cat:document.getElementById('exCat')?.value||'',amount,
+    note:document.getElementById('exNote')?.value||''});
+  DB_set('expenses',expenses);
+  document.getElementById('exAmt').value=''; document.getElementById('exNote').value='';
+  showMsg('exMsg','✅ '+t('saved'),'green');
+  nav('expenses');
+};
+window.deleteExpense=function(id){
+  if(!confirm(t('deleteBtn')+'?')) return;
+  DB_set('expenses',(DB_get('expenses')||[]).filter(e=>e.id!==id));
+  nav('expenses');
+};
+
+// ══════════════════════════════════════════════════════
+// COMPANY
+// ══════════════════════════════════════════════════════
+function renderCompany(){
+  const co=DB_get('company')||{};
+  return `
+  <div class="page-header"><div class="page-title">⚙️ ${t('company')}</div></div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group"><label>${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Company Name':'公司名称'}</label><input id="coName" value="${esc(co.name||'')}"></div>
+      <div class="form-group"><label>${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'电话'}</label><input id="coPhone" value="${esc(co.phone||'')}"></div>
+      <div class="form-group"><label>${_lang==='km'?'អាសយដ្ឋាន':_lang==='en'?'Address':'地址'}</label><input id="coAddr" value="${esc(co.address||'')}"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-success" onclick="saveCompany()">💾 ${t('save')}</button></div>
+    <div id="coMsg" style="margin-top:10px"></div>
+  </div>
+  <div class="card" style="background:#f0f7ff">
+    <div class="card-title">${_lang==='km'?'ការគ្រប់គ្រងទិន្នន័យ':_lang==='en'?'Data Management':'数据管理'}</div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-outline" onclick="window.open('/api/backup')">📤 ${_lang==='km'?'ទាញ JSON':_lang==='en'?'Download Backup':'下载备份'}</button>
+    </div>
+  </div>`;
+}
+window.saveCompany=function(){
+  DB_set('company',{name:document.getElementById('coName')?.value||'',phone:document.getElementById('coPhone')?.value||'',address:document.getElementById('coAddr')?.value||''});
+  const el=document.getElementById('companyName'); if(el) el.textContent=DB_get('company')?.name||'PAWN';
+  showMsg('coMsg','✅ '+t('saved'),'green');
+};
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+(async function(){
+  const btn=document.getElementById('langToggle'); if(btn) btn.textContent=getLangLabel(_lang);
+  const ht=document.getElementById('headerTitle'); if(ht) ht.textContent=t('systemTitle');
+  buildSidebar(); buildMobNav('home');
+  showLoading(t('syncing'));
+  let retry=0;
+  function showWaking(){
+    const lo=document.getElementById('loadingOverlay'); if(!lo) return;
+    lo.innerHTML=`<div style="background:rgba(13,59,110,.95);border-radius:20px;padding:36px 32px;max-width:320px;width:90%;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">🚀</div>
+      <div style="color:#fff;font-size:16px;font-weight:700;margin-bottom:8px">${_lang==='km'?'ម៉ាស៊ីនកំពុងដើរ...':_lang==='en'?'Server starting...':'服务器启动中...'}</div>
+      <div style="background:rgba(255,255,255,.2);border-radius:100px;height:8px;overflow:hidden;margin:14px 0">
+        <div id="wakeProg" style="background:#42a5f5;height:8px;border-radius:100px;width:0%;transition:width .5s"></div>
+      </div>
+      <div id="wakeMsg" style="color:rgba(255,255,255,.6);font-size:12px">${_lang==='km'?'កំពុងព្យាយាម...':'Connecting...'}</div>
+      <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;border-radius:8px;background:rgba(255,255,255,.2);color:#fff;border:none;cursor:pointer;font-family:inherit">
+        ${_lang==='km'?'ផ្ទុកឡើងវិញ':_lang==='en'?'Refresh':'刷新'}
+      </button>
+    </div>`; lo.classList.add('show');
+  }
+  async function tryConnect(){
+    const r=await loadDB();
+    if(r.ok){
+      hideLoading(); nav('home'); updateBadges();
+      setInterval(updateBadges,60000);
+      const upd=()=>{const el=document.getElementById('dateDisplay');if(el)el.textContent=new Date().toLocaleDateString(_lang==='zh'?'zh-CN':'en-US',{month:'long',day:'numeric',weekday:'short'});};
+      upd(); setInterval(upd,30000);
+    } else {
+      retry++;
+      if(retry===1) showWaking();
+      if(retry>12){
+        const lo=document.getElementById('loadingOverlay');
+        if(lo) lo.innerHTML=`<div style="background:#fff;border-radius:14px;padding:28px;max-width:280px;text-align:center">
+          <div style="font-size:36px;margin-bottom:10px">❌</div>
+          <p style="font-weight:700;color:#c62828">${_lang==='km'?'មិនអាចភ្ជាប់':_lang==='en'?'Cannot connect':'无法连接'}</p>
+          <button onclick="location.reload()" style="margin-top:16px;width:100%;padding:12px;border-radius:8px;background:#1565c0;color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:14px">
+            ${_lang==='km'?'ព្យាយាម':_lang==='en'?'Try Again':'重试'}
+          </button>
+        </div>`;
+        return;
+      }
+      const prog=document.getElementById('wakeProg'); if(prog) prog.style.width=(retry/12*100)+'%';
+      const msg=document.getElementById('wakeMsg'); if(msg) msg.textContent=`${retry}/12 (${r.reason||''})`;
+      setTimeout(tryConnect,8000);
+    }
+  }
+  tryConnect();
+})();
+</script>
+</body>
+</html>
