@@ -709,6 +709,9 @@ function renderLoanAdd(){
   <div class="card">
     <div class="card-title" style="margin-bottom:14px">👤 ${_lang==='km'?'ព័ត៌មានអតិថិជន':_lang==='en'?'Customer Info':'客户信息'}</div>
     <div class="form-grid">
+      <div class="form-group span3"><label>🔖 ${_lang==='km'?'លេខកិច្ចសន្យា':_lang==='en'?'Contract No.':'合同编号'}</label>
+        <input id="lContractNo" placeholder="${_lang==='km'?'លេខ（ស្រេចចិត្ត）':_lang==='en'?'Contract number (optional, auto if blank)':'合同编号（选填，不填则系统自动编号）'}" style="font-size:14px;font-weight:600;border:2px solid #f57c00;background:#fffde7">
+      </div>
       <div class="form-group"><label>${t('loanDate')}</label><input type="date" id="lDate" value="${today()}"></div>
       <div class="form-group"><label>${t('customerName')}</label><input id="lCust" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Full name':'客户全名'}"></div>
       <div class="form-group"><label>${t('customerPhone')}</label><input id="lPhone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone number':'联系电话'}"></div>
@@ -744,8 +747,9 @@ function renderLoanAdd(){
       <div class="form-group"><label>${t('loanAmount')}</label>
         <input type="number" id="lAmount" placeholder="0.00" step="0.01" oninput="calcLoan()">
       </div>
-      <div class="form-group"><label>${t('monthlyRate')} (%)</label>
-        <input type="number" id="lRate" value="5" step="0.01" placeholder="5.00" oninput="calcLoan()">
+      <div class="form-group"><label>${_lang==='km'?'ប្រាក់ទូទាត់ប្រចាំខែ ($)':_lang==='en'?'Monthly Payment ($)':'每月还款金额 ($)'} <span style="font-size:10px;color:var(--muted);font-weight:400">${_lang==='km'?'(ការប្រាក់+ដើមទុន)':_lang==='en'?'(interest+principal)':'（利息+本金）'}</span></label>
+        <input type="number" id="lMonthlyPayment" placeholder="0.00" step="0.01" oninput="calcLoanFromPayment()" style="font-size:15px;font-weight:700;color:var(--green)">
+        <input type="hidden" id="lRate" value="0">
       </div>
       <div class="form-group"><label>${t('periods')}</label>
         <select id="lPeriods" onchange="calcLoan()">
@@ -756,10 +760,10 @@ function renderLoanAdd(){
     </div>
     <div style="background:#e3f2fd;border-radius:8px;padding:14px;margin-top:12px">
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
-        <div><div style="font-size:11px;color:var(--muted)">${t('monthlyInterest')}</div><div id="cMonthlyInt" style="font-size:18px;font-weight:700;color:var(--sky)">$0.00</div></div>
-        <div><div style="font-size:11px;color:var(--muted)">${t('monthlyPrincipal')}</div><div id="cMonthlyP" style="font-size:18px;font-weight:700;color:var(--navy)">$0.00</div></div>
-        <div><div style="font-size:11px;color:var(--muted)">${t('totalInterest')}</div><div id="cTotalInt" style="font-size:18px;font-weight:700;color:var(--orange)">$0.00</div></div>
-        <div><div style="font-size:11px;color:var(--muted)">${t('totalRepay')}</div><div id="cTotalRepay" style="font-size:18px;font-weight:700;color:var(--green)">$0.00</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">${_lang==='km'?'ប្រាក់ការប្រាក់/ខែ':_lang==='en'?'Monthly Interest':'每月利息'}</div><div id="cMonthlyInt" style="font-size:18px;font-weight:700;color:var(--sky)">$0.00</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">${_lang==='km'?'ដើមទុន/ខែ':_lang==='en'?'Monthly Principal':'每月本金'}</div><div id="cMonthlyP" style="font-size:18px;font-weight:700;color:var(--navy)">$0.00</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">${_lang==='km'?'ប្រាក់ការប្រាក់សរុប':_lang==='en'?'Total Interest':'总利息'}</div><div id="cTotalInt" style="font-size:18px;font-weight:700;color:var(--orange)">$0.00</div></div>
+        <div><div style="font-size:11px;color:var(--muted)">${_lang==='km'?'សរុបទូទាត់':_lang==='en'?'Total Repay':'还款总额'}</div><div id="cTotalRepay" style="font-size:18px;font-weight:700;color:var(--green)">$0.00</div></div>
       </div>
     </div>
     <div class="form-grid" style="margin-top:12px">
@@ -774,15 +778,31 @@ function renderLoanAdd(){
 }
 
 window.calcLoan=function(){
+  // 兼容旧路径：如果直接调用calcLoan，也触发从还款金额计算
+  calcLoanFromPayment();
+};
+window.calcLoanFromPayment=function(){
   const amt=+(document.getElementById('lAmount')?.value||0);
-  const rate=+(document.getElementById('lRate')?.value||0)/100;
+  const mPayment=+(document.getElementById('lMonthlyPayment')?.value||0);
   const periods=+(document.getElementById('lPeriods')?.value||3);
-  const mInt=amt*rate;
-  const mP=periods>0?amt/periods:0;
-  const tInt=mInt*periods;
-  const tRepay=amt+tInt;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=fmt(v);};
-  set('cMonthlyInt',mInt);set('cMonthlyP',mP);set('cTotalInt',tInt);set('cTotalRepay',tRepay);
+  if(!amt||!mPayment||!periods){
+    set('cMonthlyInt',0);set('cMonthlyP',0);set('cTotalInt',0);set('cTotalRepay',0);
+    // 清空隐藏利率
+    const rateEl=document.getElementById('lRate');if(rateEl)rateEl.value='0';
+    return;
+  }
+  const mP=amt/periods;                      // 每月本金
+  const mInt=mPayment-mP;                    // 每月利息 = 每月还款 - 每月本金
+  const tInt=mInt*periods;                   // 总利息
+  const tRepay=amt+tInt;                     // 还款总额
+  const rate=amt>0?(mInt/amt)*100:0;         // 月利率（%) 反算，隐藏不展示
+  // 存入隐藏字段供保存时使用
+  const rateEl=document.getElementById('lRate');if(rateEl)rateEl.value=rate.toFixed(4);
+  set('cMonthlyInt',mInt>=0?mInt:0);
+  set('cMonthlyP',mP);
+  set('cTotalInt',tInt>=0?tInt:0);
+  set('cTotalRepay',tRepay>=0?tRepay:0);
 };
 
 window.submitLoan=function(){
@@ -796,9 +816,12 @@ window.submitLoan=function(){
   if(!amt){showMsg('loanMsg',t('msgFillAmount'),'red');return;}
   const firstDue=document.getElementById('lFirstDue')?.value;
   if(!firstDue){showMsg('loanMsg',t('msgFillDue'),'red');return;}
-  const rate=+(document.getElementById('lRate')?.value||0)/100;
   const periods=+(document.getElementById('lPeriods')?.value||3);
-  const mInt=amt*rate, mP=amt/periods;
+  const mPayment=+(document.getElementById('lMonthlyPayment')?.value||0);
+  if(!mPayment){showMsg('loanMsg','请填写每月还款金额','red');return;}
+  const mP=amt/periods;
+  const mInt=mPayment-mP;
+  const rate=amt>0?(mInt/amt):0;  // 月利率（小数）供内部记录
   // Build schedule
   const schedule=[];
   let dueDate=new Date(firstDue);
@@ -813,8 +836,10 @@ window.submitLoan=function(){
     });
     dueDate=new Date(dueDate); dueDate.setMonth(dueDate.getMonth()+1);
   }
+  const contractNo=document.getElementById('lContractNo')?.value?.trim()||'';
   const loan={
     id:newId(),
+    contractNo:contractNo,
     date:document.getElementById('lDate')?.value||today(),
     customer:cust,
     customerPhone:document.getElementById('lPhone')?.value?.trim()||'',
@@ -839,7 +864,8 @@ window.submitLoan=function(){
   const loans=DB_get('loans')||[];
   loans.push(loan); DB_set('loans',loans);
   showMsg('loanMsg',`✅ ${t('saved')} #${loan.id} — ${cust}`,'green');
-  ['lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const mpEl=document.getElementById('lMonthlyPayment');if(mpEl)mpEl.value='';
   ['lAmount','lFirstDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('lStorage').value='';
   document.getElementById('lCond').value='';
@@ -879,8 +905,8 @@ function buildLoanTable(loans){
   if(!loans.length) return `<div class="empty-state"><div class="ei">📋</div><p>${t('noRecord')}</p></div>`;
   const td=today();
   return `<div class="card"><div class="table-wrap"><table>
-    <tr><th>${t('colNo')}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
-      <th>${t('colLoanAmt')}</th><th>${t('colRate')}</th><th>${t('colMonthly')}</th>
+    <tr><th>${t('colNo')}</th><th>${_lang==='km'?'លេខសន្យា':_lang==='en'?'Contract#':'合同编号'}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
+      <th>${t('colLoanAmt')}</th><th>${_lang==='km'?'ប្រាក់/ខែ':_lang==='en'?'Monthly Pay':'月还款额'}</th>
       <th>${t('colProgress')}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>
     ${loans.map(l=>{
       const paid=l.schedule.filter(p=>p.paid).length;
@@ -888,6 +914,7 @@ function buildLoanTable(loans){
       const condColors={cond100:'cond-new',cond95:'cond-9',cond9:'cond-9',cond8:'cond-8',cond7:'cond-7'};
       return `<tr>
         <td><a href="#" onclick="viewLoan(${l.id});return false" class="text-blue fw700">#${l.id}</a></td>
+        <td style="font-size:12px;color:var(--orange);font-weight:600">${l.contractNo||'—'}</td>
         <td>${l.date}</td>
         <td>
           <div class="fw700">${esc(l.customer)}</div>
@@ -899,7 +926,7 @@ function buildLoanTable(loans){
         </td>
         <td style="font-size:11px;color:var(--muted)">${esc(l.phoneImei||'—')}</td>
         <td class="fw700 text-amber">${fmt(l.loanAmount)}</td>
-        <td>${l.monthlyRate}%</td>
+        <td class="fw700 text-green">${fmt((l.monthlyInterest||0)+(l.monthlyPrincipal||0))}</td>
         <td class="text-sky fw700">${fmt(l.monthlyInterest)}</td>
         <td>
           <div style="font-size:12px">${paid}/${l.periods} ${t('period')}</div>
