@@ -925,7 +925,7 @@ function buildLoanTable(loans){
   return `<div class="card"><div class="table-wrap"><table>
     <tr><th>${t('colNo')}</th><th>${_lang==='km'?'លេខសន្យា':_lang==='en'?'Contract#':'合同编号'}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
       <th>${t('colLoanAmt')}</th><th>${_lang==='km'?'ប្រាក់/ខែ':_lang==='en'?'Monthly Pay':'月还款额'}</th>
-      <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':'锁机'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>
+      <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':'锁机'}</th><th>${_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑白名单'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>
     ${loans.map(l=>{
       const paid=l.schedule.filter(p=>p.paid).length;
       const isOverdue=l.status==='进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
@@ -955,6 +955,11 @@ function buildLoanTable(loans){
         <td>
           <button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
             ${(l.lockStatus||'未锁')==='锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
+          </button>
+        </td>
+        <td>
+          <button onclick="toggleBlacklist(${l.id})" style="background:${(l.blacklist)?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
+            ${l.blacklist?(_lang==='km'?'🚫黑名单':_lang==='en'?'🚫 Black':'🚫 黑名单'):(_lang==='km'?'✅白名单':_lang==='en'?'✅ White':'✅ 白名单')}
           </button>
         </td>
         <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
@@ -1020,6 +1025,19 @@ window.toggleLockStatus=function(id){
   loans[li].lockStatus=next;
   DB_set('loans',loans);
   // 刷新列表
+  const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
+  const st=document.getElementById('lStatusFilter')?.value||'';
+  let list=DB_get('loans')||[];
+  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
+  if(st) list=list.filter(l=>l.status===st);
+  const wrap=document.getElementById('loanTableWrap');
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
+};
+window.toggleBlacklist=function(id){
+  const loans=DB_get('loans')||[];
+  const li=loans.findIndex(l=>l.id===id); if(li<0) return;
+  loans[li].blacklist=!loans[li].blacklist;
+  DB_set('loans',loans);
   const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
   const st=document.getElementById('lStatusFilter')?.value||'';
   let list=DB_get('loans')||[];
@@ -1227,14 +1245,32 @@ function renderExtension(){
     </div>
     <div id="extInfo" style="background:#f3e5f5;border-radius:8px;padding:12px;margin:12px 0;display:none">
       <div id="extInfoContent"></div>
+      <div id="extBlacklistBadge" style="margin-top:8px"></div>
+    </div>
+    <div id="extPayHistory" style="display:none;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#e8f5e9;border-radius:8px;padding:10px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600">📋 ${_lang==='km'?'កាលវិភាគ':_lang==='en'?'Repayment Schedule':'原还款计划'}</div>
+          <div id="extScheduleList" style="font-size:12px;max-height:120px;overflow-y:auto"></div>
+        </div>
+        <div style="background:#e3f2fd;border-radius:8px;padding:10px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600">💰 ${_lang==='km'?'កំណត់ត្រាការទូទាត់':_lang==='en'?'Payment Records':'还款记录'}</div>
+          <div id="extPayList" style="font-size:12px;max-height:120px;overflow-y:auto"></div>
+        </div>
+      </div>
     </div>
     <div class="form-grid">
       <div class="form-group"><label>${t('paymentDate')}</label><input type="date" id="extDate" value="${today()}"></div>
       <div class="form-group"><label>${t('extPeriods')}</label>
         <select id="extPeriods" onchange="calcExtension()">${[1,2,3,4,5,6].map(p=>`<option value="${p}">${p} ${t('period')}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label>${t('extFee')}</label><input type="number" id="extFee" value="0" step="0.01" placeholder="0.00"></div>
-      <div class="form-group"><label>${t('newMonthlyInterest')}</label><input id="extMonthlyInt" readonly style="background:#f3e5f5;font-weight:700;color:var(--purple)"></div>
+      <div class="form-group"><label>${_lang==='km'?'ទឹកប្រាក់ថ្មី ($)':_lang==='en'?'New Loan Amount ($)':'借款金额替换 ($)'} <span style="font-size:10px;color:var(--muted)">${_lang==='en'?'(leave 0 = unchanged)':'（0=不变）'}</span></label>
+        <input type="number" id="extNewAmount" value="0" step="0.01" placeholder="0 = 不替换借款金额" oninput="calcExtension()">
+      </div>
+      <div class="form-group"><label>${t('newMonthlyInterest')} <span style="font-size:10px;color:var(--muted)">${_lang==='en'?'(editable)':'（可修改）'}</span></label>
+        <input type="number" id="extMonthlyInt" step="0.01" placeholder="0.00" style="background:#f3e5f5;font-weight:700;color:var(--purple)" oninput="calcExtTotal()"></div>
+      <div class="form-group"><label>${_lang==='km'?'សរុបថ្ងៃទូទាត់ ($)':_lang==='en'?'Total Due on Date ($)':'还款日总额 ($)'}</label>
+        <input id="extDayTotal" readonly style="background:#e8f5e9;font-weight:700;color:var(--green);font-size:15px"></div>
     </div>
     <div class="btn-row">
       <button class="btn btn-purple" onclick="submitExtension()">${t('confirmExtension')}</button>
@@ -1262,11 +1298,18 @@ function renderExtension(){
 window.loadExtLoan=function(){
   const id=+(document.getElementById('extLoan')?.value||0);
   const l=(DB_get('loans')||[]).find(x=>x.id===id);
-  const info=document.getElementById('extInfo'), content=document.getElementById('extInfoContent');
-  if(!l||!info||!content){if(info)info.style.display='none';return;}
+  const info=document.getElementById('extInfo'), infoContent=document.getElementById('extInfoContent');
+  const payHistory=document.getElementById('extPayHistory');
+  if(!l||!info||!infoContent){if(info)info.style.display='none';if(payHistory)payHistory.style.display='none';return;}
   const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
   const unpaid=l.schedule.filter(p=>!p.paid).length;
-  content.innerHTML=`
+  const td=today();
+  // 黑名单状态
+  const blackBadge=document.getElementById('extBlacklistBadge');
+  if(blackBadge) blackBadge.innerHTML=l.blacklist
+    ?`<span style="background:#c62828;color:#fff;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">🚫 ${_lang==='en'?'BLACKLIST':'黑名单客户'}</span>`
+    :`<span style="background:#2e7d32;color:#fff;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">✅ ${_lang==='en'?'WHITELIST':'白名单客户'}</span>`;
+  infoContent.innerHTML=`
     <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px">
       <span>📱 <b>${esc(l.phoneModel)}</b> ${esc(l.phoneStorage||'')} · ${t(l.phoneCondition)||''}</span>
       <span>💵 ${t('remainPrincipal')}: <b class="text-amber">${fmt(remainP)}</b></span>
@@ -1274,15 +1317,54 @@ window.loadExtLoan=function(){
       <span>💰 ${t('monthlyRate')}: <b>${l.monthlyRate}%</b></span>
     </div>`;
   info.style.display='';
-  document.getElementById('extLoanRemain')?.setAttribute('data-remain',remainP);
+  // 还款计划
+  const schedEl=document.getElementById('extScheduleList');
+  if(schedEl) schedEl.innerHTML=l.schedule.map(p=>{
+    const isOv=!p.paid&&p.dueDate<td;
+    return `<div style="padding:3px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between">
+      <span style="color:${p.paid?'var(--green)':isOv?'var(--red)':'var(--muted)'}">期${p.period} ${p.dueDate}</span>
+      <span>${p.paid?'✅已还':'⏳待还'} ${fmt(p.principalDue+p.interestDue)}</span>
+    </div>`;
+  }).join('');
+  // 还款记录
+  const pays=(DB_get('payments')||[]).filter(p=>p.loanId===id);
+  const payEl=document.getElementById('extPayList');
+  if(payEl) payEl.innerHTML=pays.length?pays.map(p=>`
+    <div style="padding:3px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between">
+      <span style="color:var(--muted)">${p.date} 第${p.period}期</span>
+      <span style="color:var(--green);font-weight:600">${fmt((+p.paidPrincipal)+(+p.paidInterest)+(+p.penalty||0))}</span>
+    </div>`).join(''):`<div style="color:var(--muted);text-align:center;padding:10px">暂无还款记录</div>`;
+  if(payHistory) payHistory.style.display='';
   calcExtension();
 };
 window.calcExtension=function(){
   const id=+(document.getElementById('extLoan')?.value||0);
   const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
   const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
-  const mInt=remainP*(l.monthlyRate/100);
-  const el=document.getElementById('extMonthlyInt'); if(el) el.value=fmt(mInt);
+  const newAmt=+(document.getElementById('extNewAmount')?.value||0);
+  const baseAmt=newAmt>0?newAmt:remainP;
+  const extPeriods=+(document.getElementById('extPeriods')?.value||1);
+  const mInt=parseFloat((baseAmt*(l.monthlyRate/100)).toFixed(2));
+  const mP=parseFloat((baseAmt/extPeriods).toFixed(2));
+  const el=document.getElementById('extMonthlyInt');
+  if(el) el.value=mInt.toFixed(2);
+  // 计算还款日总额（每月利息+每月本金）
+  const total=mInt+mP;
+  const tot=document.getElementById('extDayTotal');
+  if(tot) tot.value=fmt(total);
+};
+window.calcExtTotal=function(){
+  // 手动修改利息后重新计算还款日总额
+  const id=+(document.getElementById('extLoan')?.value||0);
+  const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
+  const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
+  const newAmt=+(document.getElementById('extNewAmount')?.value||0);
+  const baseAmt=newAmt>0?newAmt:remainP;
+  const extPeriods=+(document.getElementById('extPeriods')?.value||1);
+  const mP=parseFloat((baseAmt/extPeriods).toFixed(2));
+  const mInt=+(document.getElementById('extMonthlyInt')?.value||0);
+  const tot=document.getElementById('extDayTotal');
+  if(tot) tot.value=fmt(mInt+mP);
 };
 window.submitExtension=function(){
   const id=+(document.getElementById('extLoan')?.value||0);
@@ -1291,11 +1373,13 @@ window.submitExtension=function(){
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
   const l=loans[li];
   const extPeriods=+(document.getElementById('extPeriods')?.value||1);
-  const extFee=+(document.getElementById('extFee')?.value||0);
   const extDate=document.getElementById('extDate')?.value||today();
   const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
-  const mInt=parseFloat((remainP*(l.monthlyRate/100)).toFixed(2));
-  const mP=parseFloat((remainP/extPeriods).toFixed(2));
+  const newAmt=+(document.getElementById('extNewAmount')?.value||0);
+  const baseAmt=newAmt>0?newAmt:remainP;
+  const mInt=parseFloat((+(document.getElementById('extMonthlyInt')?.value||0)).toFixed(2));
+  const mP=parseFloat((baseAmt/extPeriods).toFixed(2));
+  const extFee=0;
   // Get last due date
   const lastPaid=l.schedule.filter(p=>p.paid);
   let startDate=lastPaid.length>0?new Date(lastPaid[lastPaid.length-1].dueDate):new Date();
