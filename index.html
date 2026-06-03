@@ -193,7 +193,7 @@ tr:hover td{background:#f8faff}
     <span id="syncStatus"><span class="sync-dot"></span><span id="syncText">已同步</span></span>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🔄</button>
     <button id="langToggle" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🌐 EN</button>
-    <span class="chip" id="companyName">PAWN</span>
+    <span class="chip" id="companyName">MORODOK</span>
     <span class="chip" id="dateDisplay"></span>
   </div>
 </div>
@@ -448,7 +448,7 @@ async function loadDB(){
     if(!data||typeof data!=='object') return {ok:false,reason:'Invalid JSON'};
     ['loans','payments','extensions','expenses','stores'].forEach(k=>{if(!Array.isArray(data[k]))data[k]=[];});
     if(!data.nextId) data.nextId=1001;
-    if(!data.company) data.company={name:'PAWN SYSTEM',address:'',phone:'',note:''};
+    if(!data.company) data.company={name:'MORODOK',address:'',phone:'',note:''};
     _db=data; _dbReady=true; _lastSync=Date.now();
     try{ const el=document.getElementById('companyName'); if(el&&data.company?.name) el.textContent=data.company.name; }catch(e){}
     return {ok:true};
@@ -485,7 +485,7 @@ function buildSidebar(){
   const p=currentPage();
   const sb=document.getElementById('sidebarEl'); if(!sb) return;
   sb.innerHTML=`
-    <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">PAWN</div></div>
+    <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">MORODOK</div></div>
     <div style="padding:4px 0">
       <div class="sb-label">${t('mainMenu')}</div>
       <div class="nav-item" data-page="home"><span class="nav-icon">🏠</span>${t('home')}</div>
@@ -1535,7 +1535,7 @@ function renderCompany(){
 }
 window.saveCompany=function(){
   DB_set('company',{name:document.getElementById('coName')?.value||'',phone:document.getElementById('coPhone')?.value||'',address:document.getElementById('coAddr')?.value||''});
-  const el=document.getElementById('companyName'); if(el) el.textContent=DB_get('company')?.name||'PAWN';
+  const el=document.getElementById('companyName'); if(el) el.textContent=DB_get('company')?.name||'MORODOK';
   showMsg('coMsg','✅ '+t('saved'),'green');
 };
 
