@@ -739,6 +739,20 @@ function renderLoanAdd(){
       <div class="form-group"><label>${t('phoneImei')}</label><input id="lImei" placeholder="15位数字" maxlength="15"></div>
       <div class="form-group span3"><label>${t('phoneNote')}</label><input id="lPhoneNote" placeholder="${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Screen condition, scratches, etc.':'屏幕状态、划痕等备注'}"></div>
     </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
+      <div style="font-size:12px;color:var(--gray);font-weight:600;margin-bottom:10px">👥 ${_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':'紧急联系人'}</div>
+      <div class="form-grid">
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ១ — ឈ្មោះ':_lang==='en'?'Contact 1 — Name':'紧急联系人1 — 姓名'}</label><input id="lEmg1Name" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'姓名'}"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ១ — ទូរស័ព្ទ':_lang==='en'?'Contact 1 — Phone':'紧急联系人1 — 电话'}</label><input id="lEmg1Phone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'联系电话'}" type="tel"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ១ — ទំនាក់ទំនង':_lang==='en'?'Contact 1 — Relation':'紧急联系人1 — 关系'}</label><input id="lEmg1Rel" placeholder="${_lang==='km'?'ឪពុក/ម្តាយ/ប្ដី/ប្រពន្ធ':_lang==='en'?'e.g. Parent / Spouse':'如：父母/配偶/朋友'}"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ២ — ឈ្មោះ':_lang==='en'?'Contact 2 — Name':'紧急联系人2 — 姓名'}</label><input id="lEmg2Name" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'姓名'}"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ២ — ទូរស័ព្ទ':_lang==='en'?'Contact 2 — Phone':'紧急联系人2 — 电话'}</label><input id="lEmg2Phone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'联系电话'}" type="tel"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ២ — ទំនាក់ទំនង':_lang==='en'?'Contact 2 — Relation':'紧急联系人2 — 关系'}</label><input id="lEmg2Rel" placeholder="${_lang==='km'?'ឪពុក/ម្តាយ/ប្ដី/ប្រពន្ធ':_lang==='en'?'e.g. Parent / Spouse':'如：父母/配偶/朋友'}"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ៣ — ឈ្មោះ':_lang==='en'?'Contact 3 — Name':'紧急联系人3 — 姓名'}</label><input id="lEmg3Name" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'姓名'}"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ៣ — ទូរស័ព្ទ':_lang==='en'?'Contact 3 — Phone':'紧急联系人3 — 电话'}</label><input id="lEmg3Phone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'联系电话'}" type="tel"></div>
+        <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ៣ — ទំនាក់ទំនង':_lang==='en'?'Contact 3 — Relation':'紧急联系人3 — 关系'}</label><input id="lEmg3Rel" placeholder="${_lang==='km'?'ឪពុក/ម្តាយ/ប្ដី/ប្រពន្ធ':_lang==='en'?'e.g. Parent / Spouse':'如：父母/配偶/朋友'}"></div>
+      </div>
+    </div>
   </div>
 
   <div class="card" style="border-left:4px solid var(--sky)">
@@ -853,6 +867,10 @@ window.submitLoan=function(){
     phoneCondition:cond,
     phoneImei:document.getElementById('lImei')?.value?.trim()||'',
     phoneNote:document.getElementById('lPhoneNote')?.value?.trim()||'',
+    lockStatus:'未锁',
+    emgContact1:{name:document.getElementById('lEmg1Name')?.value?.trim()||'',phone:document.getElementById('lEmg1Phone')?.value?.trim()||'',relation:document.getElementById('lEmg1Rel')?.value?.trim()||''},
+    emgContact2:{name:document.getElementById('lEmg2Name')?.value?.trim()||'',phone:document.getElementById('lEmg2Phone')?.value?.trim()||'',relation:document.getElementById('lEmg2Rel')?.value?.trim()||''},
+    emgContact3:{name:document.getElementById('lEmg3Name')?.value?.trim()||'',phone:document.getElementById('lEmg3Phone')?.value?.trim()||'',relation:document.getElementById('lEmg3Rel')?.value?.trim()||''},
     loanAmount:amt,monthlyRate:+(document.getElementById('lRate')?.value||0),
     periods,firstDue,
     monthlyInterest:parseFloat(mInt.toFixed(2)),
@@ -864,7 +882,7 @@ window.submitLoan=function(){
   const loans=DB_get('loans')||[];
   loans.push(loan); DB_set('loans',loans);
   showMsg('loanMsg',`✅ ${t('saved')} #${loan.id} — ${cust}`,'green');
-  ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const mpEl=document.getElementById('lMonthlyPayment');if(mpEl)mpEl.value='';
   ['lAmount','lFirstDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('lStorage').value='';
@@ -907,7 +925,7 @@ function buildLoanTable(loans){
   return `<div class="card"><div class="table-wrap"><table>
     <tr><th>${t('colNo')}</th><th>${_lang==='km'?'លេខសន្យា':_lang==='en'?'Contract#':'合同编号'}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
       <th>${t('colLoanAmt')}</th><th>${_lang==='km'?'ប្រាក់/ខែ':_lang==='en'?'Monthly Pay':'月还款额'}</th>
-      <th>${t('colProgress')}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>
+      <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':'锁机'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>
     ${loans.map(l=>{
       const paid=l.schedule.filter(p=>p.paid).length;
       const isOverdue=l.status==='进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
@@ -933,6 +951,11 @@ function buildLoanTable(loans){
           <div style="background:#e3f2fd;height:5px;border-radius:3px;width:80px;margin-top:4px">
             <div style="background:${isOverdue?'var(--red)':'var(--sky)'};height:5px;border-radius:3px;width:${paid/l.periods*100}%"></div>
           </div>
+        </td>
+        <td>
+          <button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
+            ${(l.lockStatus||'未锁')==='锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
+          </button>
         </td>
         <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
         <td style="white-space:nowrap">
@@ -965,6 +988,13 @@ window.viewLoan=function(id){
       </div>
     </div>
     ${l.phoneNote||l.note?`<div class="alert alert-blue" style="margin-bottom:10px">${esc(l.phoneNote||'')} ${l.note?'· '+esc(l.note):''}</div>`:''}
+    ${[l.emgContact1,l.emgContact2,l.emgContact3].some(c=>c&&c.name)?`
+    <div style="background:#fff8e1;border-radius:8px;padding:12px;margin-bottom:12px;border-left:3px solid var(--orange)">
+      <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:8px">👥 ${_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':'紧急联系人'}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">
+        ${[l.emgContact1,l.emgContact2,l.emgContact3].map((c,i)=>c&&c.name?`<div style="background:#fff;border-radius:6px;padding:8px"><div style="font-weight:700">${esc(c.name)}</div><div style="color:var(--muted)">${esc(c.relation||'')}</div><div style="color:var(--sky)">${esc(c.phone||'')}</div></div>`:'').join('')}
+      </div>
+    </div>`:''}
     <div class="table-wrap"><table>
       <tr><th>${t('period')}</th><th>${t('colDate')}</th><th>${t('paidPrincipal')}</th><th>${t('paidInterest')}</th><th>${_lang==='km'?'ប្រាក់ពិន័យ':_lang==='en'?'Late Fee':'滞纳金'}</th><th>${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Status':'状态'}</th></tr>
       ${l.schedule.map(p=>{
@@ -981,6 +1011,22 @@ window.viewLoan=function(id){
       }).join('')}
     </table></div>
   `);
+};
+window.toggleLockStatus=function(id){
+  const loans=DB_get('loans')||[];
+  const li=loans.findIndex(l=>l.id===id); if(li<0) return;
+  const cur=loans[li].lockStatus||'未锁';
+  const next=cur==='锁机'?'未锁':'锁机';
+  loans[li].lockStatus=next;
+  DB_set('loans',loans);
+  // 刷新列表
+  const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
+  const st=document.getElementById('lStatusFilter')?.value||'';
+  let list=DB_get('loans')||[];
+  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
+  if(st) list=list.filter(l=>l.status===st);
+  const wrap=document.getElementById('loanTableWrap');
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
 window.deleteLoan=function(id){
   const loans=DB_get('loans')||[];
