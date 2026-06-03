@@ -975,7 +975,17 @@ function renderPaymentAdd(){
   <div class="card">
     <div class="form-grid">
       <div class="form-group span3"><label>${t('selectLoan')}</label>
-        <select id="pLoan" onchange="loadLoanPeriods()">${opts||`<option>${t('noRecord')}</option>`}</select>
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+          <div style="position:relative;flex:1">
+            <input type="text" id="pLoanSearch" placeholder="🔍 输入客户姓名 / 身份证号 / 手机号 / 序列号 / 合同编号 筛选..." 
+              style="width:100%;border:1.5px solid var(--sky);border-radius:8px;padding:9px 12px 9px 12px;font-size:13px;font-family:inherit;outline:none;box-shadow:0 0 0 3px rgba(30,136,229,.1)"
+              oninput="filterPawnLoans()" autocomplete="off">
+            <span id="pLoanSearchCount" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);pointer-events:none"></span>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="clearPawnSearch()" title="清除筛选">✕ 清除</button>
+        </div>
+        <select id="pLoan" onchange="loadLoanPeriods()" size="1" style="width:100%">${opts||`<option>${t('noRecord')}</option>`}</select>
+        <div id="pLoanHint" style="font-size:11px;color:var(--muted);margin-top:4px">共 ${loans.length} 份进行中合同，请输入关键字快速筛选后再选择</div>
       </div>
       <div class="form-group"><label>${t('paymentDate')}</label><input type="date" id="pDate" value="${today()}"></div>
       <div class="form-group"><label>${t('payPeriod')}</label><select id="pPeriod" onchange="autoFillPayment()"></select></div>
@@ -994,6 +1004,44 @@ function renderPaymentAdd(){
     <div id="payTableWrap">${buildPayTable(pays)}</div>
   </div>`;
 }
+window.filterPawnLoans=function(){
+  const kw=(document.getElementById('pLoanSearch')?.value||'').trim().toLowerCase();
+  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const sel=document.getElementById('pLoan');
+  const hint=document.getElementById('pLoanHint');
+  const countEl=document.getElementById('pLoanSearchCount');
+  if(!sel) return;
+  // 过滤匹配的合同
+  const matched=kw
+    ? loans.filter(l=>{
+        const id=String(l.id||'');
+        const name=(l.customer||'').toLowerCase();
+        const ic=(l.idNumber||l.ic||l.idCard||'').toLowerCase();
+        const phone=(l.phone||l.customerPhone||'').toLowerCase();
+        const imei=(l.imei||l.serialNo||l.serial||l.phoneSerial||'').toLowerCase();
+        const model=(l.phoneModel||'').toLowerCase();
+        return id.includes(kw)||name.includes(kw)||ic.includes(kw)||phone.includes(kw)||imei.includes(kw)||model.includes(kw);
+      })
+    : loans;
+  // 重新渲染下拉选项
+  sel.innerHTML=matched.length
+    ? matched.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('')
+    : `<option value="">— ${kw?'无匹配合同':'暂无进行中合同'} —</option>`;
+  // 更新提示
+  if(countEl) countEl.textContent=kw?`${matched.length}/${loans.length}`:'';
+  if(hint){
+    if(kw && matched.length===0) hint.textContent='⚠️ 未找到匹配合同，请检查关键字';
+    else if(kw && matched.length>0) hint.textContent=`✅ 找到 ${matched.length} 份合同，请在下方选择`;
+    else hint.textContent=`共 ${loans.length} 份进行中合同，请输入关键字快速筛选后再选择`;
+  }
+  // 自动触发加载期次
+  if(matched.length>0) loadLoanPeriods();
+};
+window.clearPawnSearch=function(){
+  const inp=document.getElementById('pLoanSearch');
+  if(inp){inp.value='';inp.focus();}
+  filterPawnLoans();
+};
 window.loadLoanPeriods=function(){
   const id=+(document.getElementById('pLoan')?.value||0);
   const l=(DB_get('loans')||[]).find(x=>x.id===id);
