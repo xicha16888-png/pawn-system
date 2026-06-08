@@ -1052,6 +1052,9 @@ window.toggleBlacklist=function(id){
 window.deleteLoan=function(id){
   const loans=DB_get('loans')||[];
   const l=loans.find(x=>x.id===id); if(!l) return;
+  const pwd = prompt(_lang==='zh'?'请输入删除密码：':_lang==='en'?'Enter delete password:':'បញ្ចូលពាក្យសម្ងាត់:');
+  if(pwd===null) return;
+  if(pwd!=='guo'){ alert(_lang==='zh'?'密码错误，无法删除！':_lang==='en'?'Wrong password!':'ពាក្យសម្ងាត់មិនត្រូវ!'); return; }
   if(!confirm(`${t('deleteBtn')} #${id} — ${l.customer}?`)) return;
   DB_set('loans',loans.filter(x=>x.id!==id));
   filterLoans();
