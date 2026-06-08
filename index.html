@@ -979,7 +979,7 @@ window.viewLoan=function(id){
   const condNames={cond100:'🆕全新',cond95:'✨99成新',cond9:'⭐9成新',cond8:'👍8成新',cond7:'👌7成以下'};
   const td=today();
   showModal(`📋 #${l.id} — ${esc(l.customer)}`,`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:13px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;font-size:13px">
       <div style="background:#f0f7ff;padding:10px;border-radius:8px">
         <div style="font-size:11px;color:var(--muted)">${t('phoneBrand')} / ${t('phoneModel')}</div>
         <div class="fw700">${esc(l.phoneBrand||'')} ${esc(l.phoneModel)} ${esc(l.phoneStorage||'')} ${esc(l.phoneColor||'')}</div>
@@ -993,6 +993,16 @@ window.viewLoan=function(id){
         <div style="font-size:12px">${t('monthlyInterest')} <b>${fmt(l.monthlyInterest)}</b> / ${t('period')}</div>
         <div style="font-size:12px">${t('totalInterest')} <b>${fmt(l.totalInterest)}</b></div>
         <div style="font-size:12px">${l.monthlyRate}% ${_lang==='en'?'monthly rate':'月利率'}</div>
+        ${l.actualAmount?`<div style="font-size:12px;color:var(--amber);font-weight:700;margin-top:4px">💵 ${_lang==='en'?'Actual Disbursement':'实际放款'}: ${fmt(l.actualAmount)}</div>`:''}
+      </div>
+    </div>
+    <div style="background:#f3e5f5;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #9c27b0;font-size:12px">
+      <div style="font-size:11px;color:#7b1fa2;font-weight:700;margin-bottom:8px">👤 ${_lang==='en'?'Customer Info':'客户信息'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><div style="color:var(--muted);font-size:11px">${_lang==='en'?'Full Name':'客户姓名'}</div><div class="fw700">${esc(l.customer)}</div></div>
+        <div><div style="color:var(--muted);font-size:11px">${_lang==='en'?'Phone':'联系电话'}</div><div class="fw700">${esc(l.customerPhone||'—')}</div></div>
+        <div><div style="color:var(--muted);font-size:11px">${_lang==='en'?'ID Number':'证件号'}</div><div class="fw700">${esc(l.customerId||l.idNumber||'—')}</div></div>
+        ${l.address?`<div style="grid-column:span 3"><div style="color:var(--muted);font-size:11px">${_lang==='en'?'Address':'地址'}</div><div>${esc(l.address)}</div></div>`:''}
       </div>
     </div>
     ${l.phoneNote||l.note?`<div class="alert alert-blue" style="margin-bottom:10px">${esc(l.phoneNote||'')} ${l.note?'· '+esc(l.note):''}</div>`:''}
