@@ -1006,13 +1006,23 @@ window.viewLoan=function(id){
       </div>
     </div>
     ${l.phoneNote||l.note?`<div class="alert alert-blue" style="margin-bottom:10px">${esc(l.phoneNote||'')} ${l.note?'· '+esc(l.note):''}</div>`:''}
-    ${[l.emgContact1,l.emgContact2,l.emgContact3].some(c=>c&&c.name)?`
     <div style="background:#fff8e1;border-radius:8px;padding:12px;margin-bottom:12px;border-left:3px solid var(--orange)">
       <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:8px">👥 ${_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':'紧急联系人'}</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">
-        ${[l.emgContact1,l.emgContact2,l.emgContact3].map((c,i)=>c&&c.name?`<div style="background:#fff;border-radius:6px;padding:8px"><div style="font-weight:700">${esc(c.name)}</div><div style="color:var(--muted)">${esc(c.relation||'')}</div><div style="color:var(--sky)">${esc(c.phone||'')}</div></div>`:'').join('')}
+        ${[l.emgContact1,l.emgContact2,l.emgContact3].map((c,i)=>c&&c.name
+          ?`<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #ffe082">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${_lang==='en'?'Contact':'联系人'} ${i+1}</div>
+              <div style="font-weight:700">${esc(c.name)}</div>
+              <div style="color:var(--muted);font-size:11px">${esc(c.relation||'—')}</div>
+              <div style="color:var(--sky);font-size:12px">📞 ${esc(c.phone||'—')}</div>
+            </div>`
+          :`<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #ffe082;opacity:0.4;text-align:center">
+              <div style="font-size:10px;color:var(--muted)">${_lang==='en'?'Contact':'联系人'} ${i+1}</div>
+              <div style="color:var(--muted);font-size:11px">—</div>
+            </div>`
+        ).join('')}
       </div>
-    </div>`:''}
+    </div>
     <div class="table-wrap"><table>
       <tr><th>${t('period')}</th><th>${t('colDate')}</th><th>${t('paidPrincipal')}</th><th>${t('paidInterest')}</th><th>${_lang==='km'?'ប្រាក់ពិន័យ':_lang==='en'?'Late Fee':'滞纳金'}</th><th>${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Status':'状态'}</th></tr>
       ${l.schedule.map(p=>{
