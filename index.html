@@ -761,6 +761,9 @@ function renderLoanAdd(){
       <div class="form-group"><label>${t('loanAmount')}</label>
         <input type="number" id="lAmount" placeholder="0.00" step="0.01" oninput="calcLoan()">
       </div>
+      <div class="form-group"><label>${_lang==='km'?'ចំនួនប្រាក់បញ្ចេញជាក់ស្តែង ($)':_lang==='en'?'Actual Disbursement ($)':'实际放款金额 ($)'}</label>
+        <input type="number" id="lActualAmount" placeholder="0.00" step="0.01" style="font-weight:700;color:var(--amber)">
+      </div>
       <div class="form-group"><label>${_lang==='km'?'ប្រាក់ទូទាត់ប្រចាំខែ ($)':_lang==='en'?'Monthly Payment ($)':'每月还款金额 ($)'} <span style="font-size:10px;color:var(--muted);font-weight:400">${_lang==='km'?'(ការប្រាក់+ដើមទុន)':_lang==='en'?'(interest+principal)':'（利息+本金）'}</span></label>
         <input type="number" id="lMonthlyPayment" placeholder="0.00" step="0.01" oninput="calcLoanFromPayment()" style="font-size:15px;font-weight:700;color:var(--green)">
         <input type="hidden" id="lRate" value="0">
@@ -771,9 +774,6 @@ function renderLoanAdd(){
         </select>
       </div>
       <div class="form-group"><label>${t('firstDue')}</label><input type="date" id="lFirstDue"></div>
-      <div class="form-group"><label>${_lang==='km'?'ចំនួនប្រាក់បញ្ចេញជាក់ស្តែង ($)':_lang==='en'?'Actual Disbursement ($)':'实际放款金额 ($)'}</label>
-        <input type="number" id="lActualAmount" placeholder="0.00" step="0.01" style="font-size:15px;font-weight:700;color:var(--amber)">
-      </div>
     </div>
     <div style="background:#e3f2fd;border-radius:8px;padding:14px;margin-top:12px">
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
