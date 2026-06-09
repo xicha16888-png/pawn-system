@@ -553,11 +553,30 @@ async function loadDB(){
 async function saveDB(){
   if(!_dbReady||!_db) return;
   setSyncStatus('syncing');
-  try{
-    const res=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(_db)});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    setSyncStatus('ok'); _dirty=false; _lastSync=Date.now();
-  }catch(e){ setSyncStatus('error'); }
+  // 最多重试3次，每次间隔2秒，防止Render休眠导致丢数据
+  for(let attempt=1; attempt<=3; attempt++){
+    try{
+      const res=await fetch('/api/data',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(_db),
+        signal: AbortSignal.timeout(15000) // 15秒超时
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      setSyncStatus('ok'); _dirty=false; _lastSync=Date.now();
+      return; // 成功直接返回
+    }catch(e){
+      console.warn(`saveDB attempt ${attempt} failed:`, e.message);
+      if(attempt < 3){
+        setSyncStatus('syncing');
+        await new Promise(r=>setTimeout(r, 2000*attempt)); // 递增等待
+      } else {
+        setSyncStatus('error');
+        // 弹出警告，提醒用户数据未保存
+        console.error('❌ 数据保存失败，请检查网络连接后手动刷新重试');
+      }
+    }
+  }
 }
 window.manualRefresh=async function(){
   setSyncStatus('syncing');
@@ -984,6 +1003,8 @@ window.submitLoan=function(){
   const loans=DB_get('loans')||[];
   loans.push(loan); DB_set('loans',loans);
   showMsg('loanMsg',`✅ ${t('saved')} #${loan.id} — ${cust}`,'green');
+  // 立即强制保存到服务器，不等800ms延迟
+  saveDB();
   ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const mpEl=document.getElementById('lMonthlyPayment');if(mpEl)mpEl.value='';
   ['lAmount','lFirstDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
