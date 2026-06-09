@@ -846,6 +846,10 @@ function renderHome(){
 // LOAN ADD
 // ══════════════════════════════════════════════════════
 function renderLoanAdd(){
+  if(_currentUser&&_currentUser.role==='readonly'){
+    return `<div class="page-header"><div class="page-title">➕ ${t('loanAdd')}</div></div>
+    <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法录入合同</p></div></div>`;
+  }
   const condOpts=[['cond100','🆕'],['cond95','✨'],['cond9','⭐'],['cond8','👍'],['cond7','👌']];
   const storageOpts=['64G','128G','256G','512G','1TB'];
   const stores=DB_get('stores')||[];
@@ -1062,7 +1066,7 @@ function renderLoanList(){
       <option value="已结清">${t('settled')}</option>
       <option value="已续期">${t('extended')}</option>
     </select>
-    <button class="btn btn-success" onclick="nav('loan-add')">${t('newLoanBtn')}</button>
+    ${!(_currentUser&&_currentUser.role==='readonly') ? `<button class="btn btn-success" onclick="nav('loan-add')">${t('newLoanBtn')}</button>` : ''}
   </div>
   <div id="loanTableWrap">${buildLoanTable(loans.slice().reverse())}</div>`;
 }
@@ -1109,19 +1113,23 @@ function buildLoanTable(loans){
           </div>
         </td>
         <td>
-          <button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
+          ${(_currentUser&&_currentUser.role==='readonly')
+            ? `<span style="font-size:12px;color:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};font-weight:600">${(l.lockStatus||'未锁')==='锁机'?'🔒 锁机':'🔓 未锁'}</span>`
+            : `<button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
             ${(l.lockStatus||'未锁')==='锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
-          </button>
+          </button>`}
         </td>
         <td>
-          <button onclick="toggleBlacklist(${l.id})" style="background:${(l.blacklist)?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
+          ${(_currentUser&&_currentUser.role==='readonly')
+            ? `<span style="font-size:12px;color:${l.blacklist?'#c62828':'#2e7d32'};font-weight:600">${l.blacklist?'🚫 黑名单':'✅ 白名单'}</span>`
+            : `<button onclick="toggleBlacklist(${l.id})" style="background:${(l.blacklist)?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
             ${l.blacklist?(_lang==='km'?'🚫黑名单':_lang==='en'?'🚫 Black':'🚫 黑名单'):(_lang==='km'?'✅白名单':_lang==='en'?'✅ White':'✅ 白名单')}
-          </button>
+          </button>`}
         </td>
         <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
-          ${canEditLoan(l) && !(_currentUser&&_currentUser.role==='readonly') ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
+          ${(_currentUser&&_currentUser.role==='readonly') ? '' : canEditLoan(l) ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
           ${isManager() ? `<button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.id})" style="margin-left:4px">${t('deleteBtn')}</button>` : ''}
         </td>
       </tr>`;
@@ -1412,6 +1420,10 @@ window.deleteLoan=function(id){
 // PAYMENT
 // ══════════════════════════════════════════════════════
 function renderPaymentAdd(){
+  if(_currentUser&&_currentUser.role==='readonly'){
+    return `<div class="page-header"><div class="page-title">💰 ${t('paymentTitle')}</div></div>
+    <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作还款</p></div></div>`;
+  }
   const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
   const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('');
   const pays=(DB_get('payments')||[]).slice().reverse();
@@ -1584,6 +1596,10 @@ window.deletePayment=function(id){
 // EXTENSION 续期
 // ══════════════════════════════════════════════════════
 function renderExtension(){
+  if(_currentUser&&_currentUser.role==='readonly'){
+    return `<div class="page-header"><div class="page-title">🔄 ${t('extension')}</div></div>
+    <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作续期</p></div></div>`;
+  }
   const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
   const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} · ${esc(l.phoneModel)} · ${fmt(l.loanAmount)}</option>`).join('');
   const exts=(DB_get('extensions')||[]).slice().reverse();
