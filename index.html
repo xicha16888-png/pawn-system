@@ -599,6 +599,20 @@ setInterval(async()=>{
 function buildSidebar(){
   const p=currentPage();
   const sb=document.getElementById('sidebarEl'); if(!sb) return;
+  // 只读用户：只显示贷款查询
+  if(_currentUser && _currentUser.role==='readonly'){
+    sb.innerHTML=`
+    <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">MORODOK</div></div>
+    <div style="padding:4px 0">
+      <div class="sb-label">${t('mainMenu')}</div>
+      <div class="nav-item ${p==='loan-list'?'active':''}" data-page="loan-list"><span class="nav-icon">🔍</span>${t('loanList')}</div>
+    </div>
+    <div style="margin-top:auto;padding:8px 4px">
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px">👁️ 只读模式</div>
+      <button onclick="doLogout()" style="width:100%;background:rgba(255,100,100,.2);border:1px solid rgba(255,100,100,.3);color:#fca5a5;padding:6px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">退出登录</button>
+    </div>`;
+    return;
+  }
   sb.innerHTML=`
     <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">MORODOK</div></div>
     <div style="padding:4px 0">
@@ -718,8 +732,26 @@ const PAGES={
   'stats':renderStats,'finance':renderFinance,'expenses':renderExpenses,
   'overdue':renderOverdue,'tomorrow':renderTomorrow,'company':renderCompany,
 };
+// 只读用户只能访问的页面
+const READONLY_PAGES = ['home','loan-list'];
+// 员工不能访问的页面
+const STAFF_BLOCKED = ['stats','stats-interest','finance','expenses'];
+
 function nav(page){
   buildSidebar(); buildMobNav(page); closeMobMore();
+  // 只读权限检查
+  if(_currentUser && _currentUser.role==='readonly' && !READONLY_PAGES.includes(page)){
+    showMsg('mainContent','<div class="card"><div class="empty-state"><div class="ei">🔒</div><p style="color:var(--red);font-weight:700">无权访问此页面</p><p style="font-size:12px;color:var(--muted)">只读账户仅可查看贷款列表</p></div></div>','');
+    const mc=document.getElementById('mainContent');
+    if(mc) mc.innerHTML='<div class="card"><div class="empty-state"><div class="ei">🔒</div><p style="color:var(--red);font-weight:700">无权访问此页面</p><p style="font-size:12px;color:var(--muted)">只读账户仅可查看贷款列表</p></div></div>';
+    return;
+  }
+  // 员工权限检查
+  if(_currentUser && _currentUser.role==='staff' && STAFF_BLOCKED.includes(page)){
+    const mc=document.getElementById('mainContent');
+    if(mc) mc.innerHTML='<div class="card"><div class="empty-state"><div class="ei">🔒</div><p style="color:var(--red);font-weight:700">无权访问此页面</p><p style="font-size:12px;color:var(--muted)">员工账户无法查看财务统计</p></div></div>';
+    return;
+  }
   if(PROTECTED.includes(page)&&!_unlocked){requirePwd(page,()=>nav(page));return;}
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===page));
   if(!_dirty){
@@ -939,6 +971,7 @@ window.calcLoanFromPayment=function(){
 };
 
 window.submitLoan=function(){
+  if(_currentUser&&(_currentUser.role==='readonly')){alert('无权限：只读账户不能录入合同');return;}
   const cust=document.getElementById('lCust')?.value?.trim();
   if(!cust){showMsg('loanMsg',t('msgFillCustomer'),'red');return;}
   const model=document.getElementById('lModel')?.value?.trim();
@@ -1088,7 +1121,7 @@ function buildLoanTable(loans){
         <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
-          ${canEditLoan(l) ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
+          ${canEditLoan(l) && !(_currentUser&&_currentUser.role==='readonly') ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
           ${isManager() ? `<button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.id})" style="margin-left:4px">${t('deleteBtn')}</button>` : ''}
         </td>
       </tr>`;
@@ -1481,6 +1514,7 @@ window.calcPayTotal=function(){
   if(tot) tot.value=fmt(p+i+pe);
 };
 window.submitPayment=function(){
+  if(_currentUser&&_currentUser.role==='readonly'){alert('无权限：只读账户不能操作还款');return;}
   const loanId=+(document.getElementById('pLoan')?.value||0);
   if(!loanId){showMsg('payMsg',t('msgSelectLoan'),'red');return;}
   const periodNo=+(document.getElementById('pPeriod')?.value||0);
@@ -1688,6 +1722,7 @@ window.calcExtTotal=function(){
   if(tot) tot.value=fmt(mInt+mP);
 };
 window.submitExtension=function(){
+  if(_currentUser&&_currentUser.role==='readonly'){alert('无权限：只读账户不能操作续期');return;}
   const id=+(document.getElementById('extLoan')?.value||0);
   if(!id){showMsg('extMsg',t('msgSelectLoan'),'red');return;}
   const loans=DB_get('loans')||[];
