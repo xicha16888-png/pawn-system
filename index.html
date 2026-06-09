@@ -187,12 +187,41 @@ tr:hover td{background:#f8faff}
 <div class="mob-overlay" id="mobOverlay" onclick="closeMobMore()"></div>
 <div class="mob-more-menu" id="mobMoreMenu"></div>
 
+<!-- 登录页面 -->
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#0a1f42,#0f2d5c,#1565c0);z-index:99999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:18px;padding:40px;width:380px;box-shadow:0 24px 80px rgba(0,0,0,0.4)">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:36px;margin-bottom:8px">🏦</div>
+      <div style="font-size:22px;font-weight:800;color:#0f2d5c">MORODOK</div>
+      <div style="font-size:13px;color:#78909c;margin-top:4px">手机抵押贷款管理系统</div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;color:#546e7a;font-weight:600;display:block;margin-bottom:6px">用户名</label>
+      <input id="loginUsername" placeholder="请输入用户名" onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()"
+        style="width:100%;border:1.5px solid #e0e0e0;border-radius:9px;padding:11px 14px;font-size:14px;outline:none;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:12px;color:#546e7a;font-weight:600;display:block;margin-bottom:6px">密码</label>
+      <input id="loginPassword" type="password" placeholder="请输入密码" onkeydown="if(event.key==='Enter')doLogin()"
+        style="width:100%;border:1.5px solid #e0e0e0;border-radius:9px;padding:11px 14px;font-size:14px;outline:none;box-sizing:border-box">
+    </div>
+    <div id="loginMsg" style="font-size:12px;color:#c62828;margin-bottom:12px;min-height:18px;text-align:center"></div>
+    <button onclick="doLogin()" style="width:100%;background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:9px;padding:13px;font-size:15px;font-weight:700;cursor:pointer">登 录</button>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:#b0bec5">© MORODOK 贷款管理系统</div>
+  </div>
+</div>
+
+<!-- 主应用 -->
+<div id="appShell" style="display:none">
+
 <div class="header">
   <div class="header-title">📱 <span id="headerTitle">手机抵押贷款管理系统</span></div>
   <div class="header-right">
     <span id="syncStatus"><span class="sync-dot"></span><span id="syncText">已同步</span></span>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🔄</button>
     <button id="langToggle" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🌐 EN</button>
+    <span id="userBadge" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px"></span>
+    <button onclick="doLogout()" style="background:rgba(255,100,100,.25);border:1px solid rgba(255,100,100,.4);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">退出</button>
     <span class="chip" id="companyName">MORODOK</span>
     <span class="chip" id="dateDisplay"></span>
   </div>
@@ -429,6 +458,73 @@ function statusBadge(status){
   return `<span class="badge badge-blue">${t('active')}</span>`;
 }
 
+// ══════════════════════════════════
+// 权限系统
+// ══════════════════════════════════
+const ROLES = {
+  admin:    { name:'管理员', level:4 },
+  manager:  { name:'主管',   level:3 },
+  staff:    { name:'员工',   level:2 },
+  readonly: { name:'只读',   level:1 },
+};
+
+function getUsers() {
+  const users = DB_get('users');
+  if (!users || users.length === 0) {
+    const defaults = [{ id:1, username:'admin', password:'admin123', role:'admin', name:'管理员', createdAt:'' }];
+    DB_set('users', defaults);
+    return defaults;
+  }
+  return users;
+}
+
+let _currentUser = null;
+function hasRole(minRole) {
+  if (!_currentUser) return false;
+  const levels = { admin:4, manager:3, staff:2, readonly:1 };
+  return (levels[_currentUser.role]||0) >= (levels[minRole]||0);
+}
+function isAdmin()   { return hasRole('admin'); }
+function isManager() { return hasRole('manager'); }
+function isStaff()   { return hasRole('staff'); }
+function canEditLoan(loan) {
+  if (!_currentUser) return false;
+  if (hasRole('manager')) return true;
+  if (_currentUser.role === 'staff') return (loan.createdBy === _currentUser.username);
+  return false;
+}
+function checkLogin() {
+  const saved = sessionStorage.getItem('pawn_user');
+  if (saved) { try { _currentUser = JSON.parse(saved); return true; } catch(e) {} }
+  return false;
+}
+window.doLogin = function() {
+  const username = (document.getElementById('loginUsername')?.value||'').trim();
+  const password = (document.getElementById('loginPassword')?.value||'').trim();
+  const msg = document.getElementById('loginMsg');
+  if (!username || !password) { msg.textContent='请输入用户名和密码'; return; }
+  const users = getUsers();
+  const user = users.find(u => u.username===username && u.password===password);
+  if (!user) { msg.textContent='用户名或密码错误'; msg.style.color='#c62828'; return; }
+  _currentUser = user;
+  sessionStorage.setItem('pawn_user', JSON.stringify(user));
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appShell').style.display='';
+  updateUserBadge();
+  renderPage(_currentPage||'home');
+};
+window.doLogout = function() {
+  if (!confirm('确认退出登录？')) return;
+  _currentUser = null;
+  sessionStorage.removeItem('pawn_user');
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+};
+function updateUserBadge() {
+  const el = document.getElementById('userBadge');
+  if (el && _currentUser) el.innerHTML = `<span style="opacity:.7">${ROLES[_currentUser.role]?.name||''}</span> ${_currentUser.name||_currentUser.username}`;
+}
+
 // ── DB ──
 let _db=null, _dirty=false, _dbReady=false, _syncTimer=null, _lastSync=null;
 function DB_get(k){ return _db?_db[k]:null; }
@@ -515,6 +611,7 @@ function buildSidebar(){
     <div style="padding:4px 0">
       <div class="sb-label">${t('settings')}</div>
       <div class="nav-item" data-page="company"><span class="nav-icon">⚙️</span>${t('company')}</div>
+      ${isAdmin() ? `<div class="nav-item" data-page="user-mgmt"><span class="nav-icon">👥</span>${_lang==='zh'?'用户管理':_lang==='en'?'Users':'គ្រប់គ្រងអ្នកប្រើ'}</div>` : ''}
     </div>`;
   sb.querySelectorAll('.nav-item[data-page]').forEach(el=>{
     el.addEventListener('click',()=>nav(el.dataset.page));
@@ -597,7 +694,7 @@ function requirePwd(page,cb){
 
 // ── Navigation ──
 const PAGES={
-  'home':renderHome,'loan-add':renderLoanAdd,'loan-list':renderLoanList,
+  'user-mgmt':renderUserMgmt,'home':renderHome,'loan-add':renderLoanAdd,'loan-list':renderLoanList,
   'payment-add':renderPaymentAdd,'extension':renderExtension,
   'stats':renderStats,'finance':renderFinance,'expenses':renderExpenses,
   'overdue':renderOverdue,'tomorrow':renderTomorrow,'company':renderCompany,
@@ -856,6 +953,8 @@ window.submitLoan=function(){
   const contractNo=document.getElementById('lContractNo')?.value?.trim()||'';
   const loan={
     id:newId(),
+    createdBy:_currentUser?.username||'',
+    createdByName:_currentUser?.name||'',
     contractNo:contractNo,
     date:document.getElementById('lDate')?.value||today(),
     customer:cust,
@@ -968,8 +1067,8 @@ function buildLoanTable(loans){
         <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
-          <button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.id})" style="margin-left:4px">${t('deleteBtn')}</button>
+          ${canEditLoan(l) ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
+          ${isManager() ? `<button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.id})" style="margin-left:4px">${t('deleteBtn')}</button>` : ''}
         </td>
       </tr>`;
     }).join('')}
@@ -1070,6 +1169,84 @@ window.toggleBlacklist=function(id){
   const wrap=document.getElementById('loanTableWrap');
   if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
+// ── 用户管理页面 ──
+function renderUserMgmt() {
+  if (!isAdmin()) return `<div class="card"><div class="empty-state"><div class="ei">🔒</div><p>无权访问</p></div></div>`;
+  const users = getUsers();
+  return `
+  <div class="page-header"><div class="page-title">👥 用户管理</div></div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title" style="margin-bottom:14px">➕ 新增用户</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end">
+      <div><label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">姓名</label>
+        <input id="nu_name" placeholder="真实姓名" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">用户名</label>
+        <input id="nu_username" placeholder="登录用户名" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">密码</label>
+        <input id="nu_password" placeholder="初始密码" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">角色</label>
+        <select id="nu_role" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px">
+          <option value="manager">主管</option>
+          <option value="staff">员工</option>
+          <option value="readonly">只读</option>
+        </select></div>
+      <button class="btn btn-primary" onclick="addUser()">添加</button>
+    </div>
+    <div id="userMsg" style="margin-top:8px;font-size:12px"></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">用户列表</div>
+    <div class="table-wrap"><table>
+      <tr><th>#</th><th>姓名</th><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr>
+      ${users.map((u,i) => `<tr>
+        <td>${i+1}</td>
+        <td class="fw700">${esc(u.name||u.username)}</td>
+        <td style="color:var(--muted)">${esc(u.username)}</td>
+        <td><span class="badge ${u.role==='admin'?'badge-red':u.role==='manager'?'badge-blue':u.role==='staff'?'badge-green':'badge-gray'}">${ROLES[u.role]?.name||u.role}</span></td>
+        <td style="font-size:11px;color:var(--muted)">${u.createdAt||'-'}</td>
+        <td>
+          ${u.username !== 'admin' ? `
+          <button class="btn btn-outline btn-sm" onclick="resetUserPwd(${u.id})">🔑 重置密码</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})" style="margin-left:4px">删除</button>
+          ` : '<span style="font-size:11px;color:var(--muted)">超级管理员</span>'}
+        </td>
+      </tr>`).join('')}
+    </table></div>
+  </div>`;
+}
+
+window.addUser = function() {
+  const name = document.getElementById('nu_name')?.value.trim();
+  const username = document.getElementById('nu_username')?.value.trim();
+  const password = document.getElementById('nu_password')?.value.trim();
+  const role = document.getElementById('nu_role')?.value;
+  const msg = document.getElementById('userMsg');
+  if (!name||!username||!password) { msg.innerHTML='<span style="color:red">请填写完整信息</span>'; return; }
+  const users = getUsers();
+  if (users.find(u=>u.username===username)) { msg.innerHTML='<span style="color:red">用户名已存在</span>'; return; }
+  const newUser = { id: Date.now(), username, password, name, role, createdAt: today() };
+  users.push(newUser);
+  DB_set('users', users);
+  msg.innerHTML='<span style="color:green">✅ 用户添加成功</span>';
+  ['nu_name','nu_username','nu_password'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  setTimeout(()=>{ const mc=document.getElementById('mainContent'); if(mc){mc.innerHTML=renderUserMgmt();} }, 800);
+};
+
+window.deleteUser = function(id) {
+  if (!confirm('确认删除该用户？')) return;
+  let users = getUsers().filter(u=>u.id!==id);
+  DB_set('users', users);
+  const mc=document.getElementById('mainContent'); if(mc){mc.innerHTML=renderUserMgmt();}
+};
+
+window.resetUserPwd = function(id) {
+  const newPwd = prompt('请输入新密码（至少6位）');
+  if (!newPwd || newPwd.length < 6) { alert('密码至少6位'); return; }
+  const users = getUsers();
+  const idx = users.findIndex(u=>u.id===id);
+  if (idx>=0) { users[idx].password = newPwd; DB_set('users', users); alert('✅ 密码重置成功'); }
+};
+
 window.editLoan=function(id){
   const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
   // 填入当前数据
@@ -1757,7 +1934,18 @@ window.saveCompany=function(){
   async function tryConnect(){
     const r=await loadDB();
     if(r.ok){
-      hideLoading(); nav('home'); updateBadges();
+      hideLoading();
+      // 检查登录状态
+      if (checkLogin()) {
+        document.getElementById('appShell').style.display = '';
+        document.getElementById('loginScreen').style.display = 'none';
+        updateUserBadge();
+        nav('home');
+      } else {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appShell').style.display = 'none';
+      }
+      updateBadges();
       setInterval(updateBadges,60000);
       const upd=()=>{const el=document.getElementById('dateDisplay');if(el)el.textContent=new Date().toLocaleDateString(_lang==='zh'?'zh-CN':'en-US',{month:'long',day:'numeric',weekday:'short'});};
       upd(); setInterval(upd,30000);
@@ -1857,5 +2045,6 @@ window.saveCompany=function(){
   </div>
 </div>
 
+</div><!-- /appShell -->
 </body>
 </html>
