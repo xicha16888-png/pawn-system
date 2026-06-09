@@ -24,7 +24,8 @@ function getInitData() {
   return {
     loans: [], payments: [], extensions: [], expenses: [], stores: [],
     company: { name: 'PAWN SYSTEM', address: '', phone: '', note: '' },
-    nextId: 1001
+    nextId: 1001,
+    users: [{ id:1, username:'admin', password:'admin123', role:'admin', name:'管理员', createdAt:'' }]
   };
 }
 
@@ -48,7 +49,7 @@ app.get('/api/data', async (req, res) => {
   try {
     const data = await loadData();
     if (!data || typeof data !== 'object') return res.status(500).json({ error: 'DATA_INVALID' });
-    const arrKeys = ['loans','payments','extensions','expenses','stores'];
+    const arrKeys = ['loans','payments','extensions','expenses','stores','users'];
     arrKeys.forEach(k => { if (!Array.isArray(data[k])) data[k] = []; });
     if (!data.nextId) data.nextId = 1001;
     if (!data.company) data.company = getInitData().company;
@@ -61,7 +62,7 @@ app.get('/api/data', async (req, res) => {
 app.post('/api/data', async (req, res) => {
   try {
     const body = req.body;
-    const allowed = ['loans','payments','extensions','expenses','stores','company','nextId'];
+    const allowed = ['loans','payments','extensions','expenses','stores','company','nextId','users'];
     const rows = Object.entries(body)
       .filter(([k]) => allowed.includes(k))
       .map(([key, value]) => ({ key, value }));
