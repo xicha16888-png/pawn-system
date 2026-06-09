@@ -216,7 +216,11 @@ tr:hover td{background:#f8faff}
 
 <div class="header">
   <div class="header-title">📱 <span id="headerTitle">手机抵押贷款管理系统</span></div>
-  <div class="header-right">
+  <div id="saveErrorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:#c62828;color:#fff;padding:10px 20px;align-items:center;justify-content:space-between;font-size:13px;font-weight:600">
+  <span>⚠️ 数据保存失败！请不要关闭页面，点击右侧按钮重试</span>
+  <button onclick="saveDB();document.getElementById('saveErrorBanner').style.display='none'" style="background:#fff;color:#c62828;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700;font-family:inherit">立即重试</button>
+</div>
+<div class="header-right">
     <span id="syncStatus"><span class="sync-dot"></span><span id="syncText">已同步</span></span>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🔄</button>
     <button id="langToggle" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🌐 EN</button>
@@ -542,9 +546,11 @@ async function loadDB(){
     if(!res.ok) return {ok:false,reason:`HTTP ${res.status}`};
     const data=await res.json();
     if(!data||typeof data!=='object') return {ok:false,reason:'Invalid JSON'};
-    ['loans','payments','extensions','expenses','stores'].forEach(k=>{if(!Array.isArray(data[k]))data[k]=[];});
+    ['loans','payments','extensions','expenses','stores','users'].forEach(k=>{if(!Array.isArray(data[k]))data[k]=[];});
     if(!data.nextId) data.nextId=1001;
     if(!data.company) data.company={name:'MORODOK',address:'',phone:'',note:''};
+    // 确保默认管理员存在
+    if(!data.users||data.users.length===0) data.users=[{id:1,username:'admin',password:'admin123',role:'admin',name:'管理员',createdAt:''}];
     _db=data; _dbReady=true; _lastSync=Date.now();
     try{ const el=document.getElementById('companyName'); if(el&&data.company?.name) el.textContent=data.company.name; }catch(e){}
     return {ok:true};
@@ -572,8 +578,13 @@ async function saveDB(){
         await new Promise(r=>setTimeout(r, 2000*attempt)); // 递增等待
       } else {
         setSyncStatus('error');
-        // 弹出警告，提醒用户数据未保存
-        console.error('❌ 数据保存失败，请检查网络连接后手动刷新重试');
+        console.error('❌ 数据保存失败');
+        // 显示醒目的失败提示
+        const errDiv = document.getElementById('saveErrorBanner');
+        if(errDiv) {
+          errDiv.style.display='flex';
+          setTimeout(()=>{ errDiv.style.display='none'; }, 10000);
+        }
       }
     }
   }
@@ -1413,6 +1424,7 @@ window.deleteLoan=function(id){
   if(pwd!=='guo'){ alert(_lang==='zh'?'密码错误，无法删除！':_lang==='en'?'Wrong password!':'ពាក្យសម្ងាត់មិនត្រូវ!'); return; }
   if(!confirm(`${t('deleteBtn')} #${id} — ${l.customer}?`)) return;
   DB_set('loans',loans.filter(x=>x.id!==id));
+  saveDB(); // 立即保存
   filterLoans();
 };
 
@@ -1546,6 +1558,7 @@ window.submitPayment=function(){
   const pays=DB_get('payments')||[];
   pays.push({id:newId(),loanId,customer:l.customer,period:periodNo,date:pDate,paidPrincipal:principal,paidInterest:interest,penalty});
   DB_set('payments',pays);
+  saveDB(); // 立即保存，防止数据丢失
   showMsg('payMsg',`✅ #${loanId} ${l.customer} — ${t('period')} ${periodNo} · ${fmt(principal+interest+penalty)}`,'green');
   document.getElementById('pPenalty').value='0';
   document.getElementById('pTotal').value='';
@@ -1775,6 +1788,7 @@ window.submitExtension=function(){
   const exts=DB_get('extensions')||[];
   exts.push({id:newId(),loanId:id,customer:l.customer,date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   DB_set('extensions',exts);
+  saveDB(); // 立即保存，防止数据丢失
   showMsg('extMsg',`✅ #${id} ${l.customer} — ${_lang==='km'?'បន្ត':_lang==='en'?'Extended +':'+'}${extPeriods} ${t('period')}`,'green');
   setTimeout(()=>nav('extension'),600);
 };
