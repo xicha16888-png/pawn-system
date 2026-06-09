@@ -1215,36 +1215,51 @@ function renderUserMgmt() {
   </div>`;
 }
 
-window.addUser = function() {
+window.addUser = async function() {
   const name = document.getElementById('nu_name')?.value.trim();
   const username = document.getElementById('nu_username')?.value.trim();
   const password = document.getElementById('nu_password')?.value.trim();
   const role = document.getElementById('nu_role')?.value;
   const msg = document.getElementById('userMsg');
   if (!name||!username||!password) { msg.innerHTML='<span style="color:red">请填写完整信息</span>'; return; }
+  if (password.length < 4) { msg.innerHTML='<span style="color:red">密码至少4位</span>'; return; }
   const users = getUsers();
   if (users.find(u=>u.username===username)) { msg.innerHTML='<span style="color:red">用户名已存在</span>'; return; }
   const newUser = { id: Date.now(), username, password, name, role, createdAt: today() };
   users.push(newUser);
-  DB_set('users', users);
-  msg.innerHTML='<span style="color:green">✅ 用户添加成功</span>';
-  ['nu_name','nu_username','nu_password'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  setTimeout(()=>{ const mc=document.getElementById('mainContent'); if(mc){mc.innerHTML=renderUserMgmt();} }, 800);
+  // 直接调用API保存，不依赖DB_set的延迟机制
+  msg.innerHTML='<span style="color:var(--sky)">⏳ 保存中...</span>';
+  try {
+    DB_set('users', users);
+    // 强制立即同步到服务器
+    await saveDB();
+    msg.innerHTML='<span style="color:green">✅ 用户添加成功</span>';
+    ['nu_name','nu_username','nu_password'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    setTimeout(()=>{ const mc=document.getElementById('mainContent'); if(mc){mc.innerHTML=renderUserMgmt();} }, 600);
+  } catch(e) {
+    msg.innerHTML='<span style="color:red">❌ 保存失败，请重试</span>';
+  }
 };
 
-window.deleteUser = function(id) {
+window.deleteUser = async function(id) {
   if (!confirm('确认删除该用户？')) return;
   let users = getUsers().filter(u=>u.id!==id);
   DB_set('users', users);
+  await saveDB();
   const mc=document.getElementById('mainContent'); if(mc){mc.innerHTML=renderUserMgmt();}
 };
 
-window.resetUserPwd = function(id) {
-  const newPwd = prompt('请输入新密码（至少6位）');
-  if (!newPwd || newPwd.length < 6) { alert('密码至少6位'); return; }
+window.resetUserPwd = async function(id) {
+  const newPwd = prompt('请输入新密码（至少4位）');
+  if (!newPwd || newPwd.length < 4) { alert('密码至少4位'); return; }
   const users = getUsers();
   const idx = users.findIndex(u=>u.id===id);
-  if (idx>=0) { users[idx].password = newPwd; DB_set('users', users); alert('✅ 密码重置成功'); }
+  if (idx>=0) {
+    users[idx].password = newPwd;
+    DB_set('users', users);
+    await saveDB();
+    alert('✅ 密码重置成功');
+  }
 };
 
 window.editLoan=function(id){
