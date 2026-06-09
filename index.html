@@ -968,6 +968,7 @@ function buildLoanTable(loans){
         <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
+          <button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>
           <button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.id})" style="margin-left:4px">${t('deleteBtn')}</button>
         </td>
       </tr>`;
@@ -1069,6 +1070,87 @@ window.toggleBlacklist=function(id){
   const wrap=document.getElementById('loanTableWrap');
   if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
+window.editLoan=function(id){
+  const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
+  // 填入当前数据
+  document.getElementById('editLoanId').value = id;
+  document.getElementById('edit_contractNo').value = l.contractNo||'';
+  document.getElementById('edit_date').value = l.date||'';
+  document.getElementById('edit_customer').value = l.customer||'';
+  document.getElementById('edit_customerPhone').value = l.customerPhone||'';
+  document.getElementById('edit_idNumber').value = l.idNumber||l.idCard||'';
+  document.getElementById('edit_shopName').value = l.shopName||'';
+  document.getElementById('edit_salesperson').value = l.salesperson||'';
+  document.getElementById('edit_phoneBrand').value = l.phoneBrand||'';
+  document.getElementById('edit_phoneModel').value = l.phoneModel||'';
+  document.getElementById('edit_phoneImei').value = l.phoneImei||'';
+  document.getElementById('edit_phoneNote').value = l.phoneNote||'';
+  document.getElementById('edit_loanAmount').value = l.loanAmount||'';
+  document.getElementById('edit_actualAmount').value = l.actualAmount||'';
+  document.getElementById('edit_monthlyInterest').value = l.monthlyInterest||'';
+  document.getElementById('edit_firstDue').value = l.firstDue||'';
+  document.getElementById('edit_note').value = l.note||'';
+  document.getElementById('editLoanMsg').innerHTML = '';
+  document.getElementById('editLoanModal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeEditModal=function(){
+  document.getElementById('editLoanModal').style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+window.saveEditLoan=function(){
+  const id = +document.getElementById('editLoanId').value;
+  const loans = DB_get('loans')||[];
+  const idx = loans.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  const l = loans[idx];
+
+  // 验证必填项
+  const customer = document.getElementById('edit_customer').value.trim();
+  if(!customer){ document.getElementById('editLoanMsg').innerHTML='<div style="color:red;font-size:13px;margin-bottom:8px">⚠️ 客户姓名不能为空</div>'; return; }
+
+  // 更新字段（不动还款计划）
+  loans[idx] = {
+    ...l,
+    contractNo: document.getElementById('edit_contractNo').value.trim(),
+    date: document.getElementById('edit_date').value||l.date,
+    customer,
+    customerPhone: document.getElementById('edit_customerPhone').value.trim(),
+    idNumber: document.getElementById('edit_idNumber').value.trim(),
+    shopName: document.getElementById('edit_shopName').value.trim(),
+    salesperson: document.getElementById('edit_salesperson').value.trim(),
+    phoneBrand: document.getElementById('edit_phoneBrand').value.trim(),
+    phoneModel: document.getElementById('edit_phoneModel').value.trim(),
+    phoneImei: document.getElementById('edit_phoneImei').value.trim(),
+    phoneNote: document.getElementById('edit_phoneNote').value.trim(),
+    loanAmount: +(document.getElementById('edit_loanAmount').value)||l.loanAmount,
+    actualAmount: +(document.getElementById('edit_actualAmount').value)||l.actualAmount||0,
+    monthlyInterest: +(document.getElementById('edit_monthlyInterest').value)||l.monthlyInterest,
+    firstDue: document.getElementById('edit_firstDue').value||l.firstDue,
+    note: document.getElementById('edit_note').value.trim(),
+  };
+
+  DB_set('loans', loans);
+  closeEditModal();
+
+  // 刷新列表
+  const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
+  const st=document.getElementById('lStatusFilter')?.value||'';
+  let list=DB_get('loans')||[];
+  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
+  if(st) list=list.filter(l=>l.status===st);
+  const wrap=document.getElementById('loanTableWrap');
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
+};
+
+// 点击弹窗外部关闭
+document.addEventListener('click', function(e){
+  const modal = document.getElementById('editLoanModal');
+  if(modal && e.target === modal) closeEditModal();
+});
+
 window.deleteLoan=function(id){
   const loans=DB_get('loans')||[];
   const l=loans.find(x=>x.id===id); if(!l) return;
@@ -1701,5 +1783,79 @@ window.saveCompany=function(){
   tryConnect();
 })();
 </script>
+<!-- 编辑合同弹窗 -->
+<div id="editLoanModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;padding:28px;max-width:780px;margin:40px auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e0e0e0">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:#0f2d5c">✏️ 编辑合同信息</div>
+        <div style="font-size:12px;color:#78909c;margin-top:4px">修改合同中的错误信息，还款计划不受影响</div>
+      </div>
+      <button onclick="closeEditModal()" style="background:#f5f5f5;border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:18px;color:#546e7a">✕</button>
+    </div>
+
+    <input type="hidden" id="editLoanId">
+
+    <!-- 客户信息 -->
+    <div style="font-size:13px;font-weight:700;color:#1565c0;margin-bottom:10px;padding:6px 10px;background:#e3f2fd;border-radius:6px">👤 客户信息</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">合同编号</label>
+        <input id="edit_contractNo" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">贷款日期</label>
+        <input type="date" id="edit_date" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">客户姓名 *</label>
+        <input id="edit_customer" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">客户电话</label>
+        <input id="edit_customerPhone" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">身份证号</label>
+        <input id="edit_idNumber" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">店铺名称</label>
+        <input id="edit_shopName" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">业务员</label>
+        <input id="edit_salesperson" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+    </div>
+
+    <!-- 手机信息 -->
+    <div style="font-size:13px;font-weight:700;color:#1565c0;margin-bottom:10px;padding:6px 10px;background:#e3f2fd;border-radius:6px">📱 手机信息</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">手机品牌</label>
+        <input id="edit_phoneBrand" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">手机型号</label>
+        <input id="edit_phoneModel" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">IMEI号</label>
+        <input id="edit_phoneImei" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">备注</label>
+        <input id="edit_phoneNote" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+    </div>
+
+    <!-- 贷款信息 -->
+    <div style="font-size:13px;font-weight:700;color:#1565c0;margin-bottom:10px;padding:6px 10px;background:#e3f2fd;border-radius:6px">💰 贷款信息</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">贷款金额 ($)</label>
+        <input type="number" id="edit_loanAmount" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">实际放款金额 ($)</label>
+        <input type="number" id="edit_actualAmount" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">月利息 ($)</label>
+        <input type="number" id="edit_monthlyInterest" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">首次还款日</label>
+        <input type="date" id="edit_firstDue" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">备注</label>
+        <input id="edit_note" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+    </div>
+
+    <!-- 警告提示 -->
+    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:12px;color:#5d4037">
+      ⚠️ <b>注意：</b>修改贷款金额或月利息不会自动更新已有的还款计划，如需更新请联系管理员。客户信息、手机信息、联系方式等可随时修改。
+    </div>
+
+    <div id="editLoanMsg"></div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeEditModal()" style="background:#f5f5f5;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:14px;color:#546e7a;font-weight:600">取消</button>
+      <button onclick="saveEditLoan()" style="background:linear-gradient(135deg,#1565c0,#1e88e5);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-size:14px;font-weight:700">💾 保存修改</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
