@@ -224,7 +224,7 @@ tr:hover td{background:#f8faff}
     <span id="syncStatus"><span class="sync-dot"></span><span id="syncText">已同步</span></span>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🔄</button>
     <button id="langToggle" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🌐 EN</button>
-    ${isManager() ? `<button onclick="downloadBackup()" title="下载数据备份" style="background:rgba(255,215,0,.2);border:1px solid rgba(255,215,0,.4);color:#ffd700;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">💾 备份</button>` : ''}
+    <button id="backupBtn" onclick="downloadBackup()" title="下载数据备份" style="display:none;background:rgba(255,215,0,.2);border:1px solid rgba(255,215,0,.4);color:#ffd700;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">💾 备份</button>
     <span id="userBadge" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px"></span>
     <button onclick="doLogout()" style="background:rgba(255,100,100,.25);border:1px solid rgba(255,100,100,.4);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">退出</button>
     <span class="chip" id="companyName">MORODOK</span>
@@ -641,6 +641,9 @@ window.doLogout = function() {
 function updateUserBadge() {
   const el = document.getElementById('userBadge');
   if (el && _currentUser) el.innerHTML = `<span style="opacity:.7">${ROLES[_currentUser.role]?.name||''}</span> ${_currentUser.name||_currentUser.username}`;
+  // 根据权限显示/隐藏备份按钮
+  const btn = document.getElementById('backupBtn');
+  if (btn) btn.style.display = isManager() ? '' : 'none';
 }
 
 // ── DB ──
