@@ -84,6 +84,33 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
+// 紧急重置管理员账号（访问此接口即可重置）
+app.get('/api/reset-admin', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('pawndata').select('key, value').eq('key', 'users');
+    if (error) throw new Error(error.message);
+    const defaultAdmin = { id:1, username:'admin', password:'admin123', role:'admin', name:'管理员', createdAt:'' };
+    let users = [];
+    if (data && data.length > 0 && Array.isArray(data[0].value)) {
+      users = data[0].value;
+      // 找到admin账号并重置，如果没有则新增
+      const idx = users.findIndex(u => u.username === 'admin');
+      if (idx >= 0) {
+        users[idx] = { ...users[idx], password: 'admin123', role: 'admin' };
+      } else {
+        users.unshift(defaultAdmin);
+      }
+    } else {
+      users = [defaultAdmin];
+    }
+    const { error: e2 } = await supabase.from('pawndata').upsert([{ key: 'users', value: users }], { onConflict: 'key' });
+    if (e2) throw new Error(e2.message);
+    res.json({ ok: true, message: '✅ 管理员账号已重置！用户名: admin，密码: admin123，请立即登录并修改密码。' });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.get('/api/backup', async (req, res) => {
   try {
     const data = await loadData();
