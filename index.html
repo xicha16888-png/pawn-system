@@ -224,6 +224,7 @@ tr:hover td{background:#f8faff}
     <span id="syncStatus"><span class="sync-dot"></span><span id="syncText">已同步</span></span>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🔄</button>
     <button id="langToggle" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">🌐 EN</button>
+    ${isManager() ? `<button onclick="downloadBackup()" title="下载数据备份" style="background:rgba(255,215,0,.2);border:1px solid rgba(255,215,0,.4);color:#ffd700;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">💾 备份</button>` : ''}
     <span id="userBadge" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:4px 12px;border-radius:20px;font-size:11px"></span>
     <button onclick="doLogout()" style="background:rgba(255,100,100,.25);border:1px solid rgba(255,100,100,.4);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;font-family:inherit">退出</button>
     <span class="chip" id="companyName">MORODOK</span>
@@ -517,6 +518,113 @@ window.doLogin = function() {
   updateUserBadge();
   renderPage(_currentPage||'home');
 };
+// ── 数据备份 ──
+window.downloadBackup = async function() {
+  const btn = event?.target;
+  try {
+    if(btn){ btn.textContent='⏳ 备份中...'; btn.disabled=true; }
+    await saveDB();
+    const res = await fetch('/api/data', {cache:'no-store'});
+    const data = await res.json();
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+    const loans = data.loans || [];
+    const pays = data.payments || [];
+
+    // ── 1. JSON备份（系统恢复用）──
+    const jsonBlob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const a1 = document.createElement('a');
+    a1.href = URL.createObjectURL(jsonBlob);
+    a1.download = `MORODOK_backup_${dateStr}.json`; a1.click();
+    URL.revokeObjectURL(a1.href);
+    await new Promise(r=>setTimeout(r,600));
+
+    // ── 2. 合同表 CSV ──
+    const loanHeaders = ['合同ID','合同编号','日期','客户姓名','客户电话','身份证号','店铺','业务员','手机品牌','手机型号','IMEI','贷款金额','实际放款','月利息','首次还款日','状态','锁机','黑名单','录入人'];
+    const loanRows = loans.map(l => [
+      l.id, l.contractNo||'', l.date||'', l.customer||'', l.customerPhone||'',
+      l.idNumber||'', l.shopName||'', l.salesperson||'',
+      l.phoneBrand||'', l.phoneModel||'', l.phoneImei||'',
+      l.loanAmount||0, l.actualAmount||0, l.monthlyInterest||0,
+      l.firstDue||'', l.status||'',
+      l.lockStatus||'未锁', l.blacklist?'黑名单':'白名单', l.createdBy||''
+    ]);
+    function toCSV(headers, rows) {
+      const esc = v => { const s=String(v??'').replace(/"/g,'""'); return (s.includes(',')||s.includes('"')||s.includes('
+'))?`"${s}"`:s; };
+      return '﻿' + [headers.join(','), ...rows.map(r=>r.map(esc).join(','))].join('
+');
+    }
+    const a2 = document.createElement('a');
+    a2.href = URL.createObjectURL(new Blob([toCSV(loanHeaders,loanRows)],{type:'text/csv;charset=utf-8'}));
+    a2.download = `MORODOK_合同表_${dateStr}.csv`; a2.click();
+    URL.revokeObjectURL(a2.href);
+    await new Promise(r=>setTimeout(r,600));
+
+    // ── 3. 还款记录 CSV ──
+    const payHeaders = ['记录ID','合同ID','客户','期数','日期','本金($)','利息($)','滞纳金($)','合计($)'];
+    const payRows = pays.map(p => [
+      p.id, p.loanId, p.customer||'', p.period||'', p.date||'',
+      p.paidPrincipal||0, p.paidInterest||0, p.penalty||0,
+      (+p.paidPrincipal||0)+(+p.paidInterest||0)+(+p.penalty||0)
+    ]);
+    const a3 = document.createElement('a');
+    a3.href = URL.createObjectURL(new Blob([toCSV(payHeaders,payRows)],{type:'text/csv;charset=utf-8'}));
+    a3.download = `MORODOK_还款记录_${dateStr}.csv`; a3.click();
+    URL.revokeObjectURL(a3.href);
+
+    if(btn){ btn.textContent='💾 备份'; btn.disabled=false; }
+    alert(`✅ 备份成功！已下载3个文件：
+
+📄 JSON备份文件（系统恢复用）
+📊 合同表 CSV（可用Excel打开）
+📊 还款记录 CSV（可用Excel打开）
+
+合同：${loans.length} 笔 ｜ 还款记录：${pays.length} 条`);
+  } catch(e) {
+    if(btn){ btn.textContent='💾 备份'; btn.disabled=false; }
+    alert('❌ 备份失败：' + e.message);
+  }
+};
+
+// ── 数据恢复（管理员专用）──
+window.restoreBackup = async function() {
+  if(!isAdmin()) { alert('只有管理员可以恢复数据'); return; }
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = async function(e) {
+    const file = e.target.files[0]; if(!file) return;
+    const text = await file.text();
+    let data;
+    try { data = JSON.parse(text); } catch(e) { alert('文件格式错误，请选择正确的备份文件'); return; }
+    if(!data.loans || !Array.isArray(data.loans)) { alert('备份文件无效'); return; }
+    const confirm1 = confirm(`确认恢复备份？
+
+备份包含：
+• 合同 ${data.loans.length} 笔
+• 还款记录 ${(data.payments||[]).length} 条
+
+⚠️ 警告：这将覆盖现有数据！`);
+    if(!confirm1) return;
+    const confirm2 = confirm('再次确认：恢复后现有数据将被替换，此操作不可撤销！');
+    if(!confirm2) return;
+    try {
+      const res = await fetch('/api/data', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if(res.ok) {
+        alert('✅ 数据恢复成功！页面即将刷新');
+        location.reload();
+      } else {
+        alert('❌ 恢复失败，请重试');
+      }
+    } catch(e) { alert('❌ 恢复失败：' + e.message); }
+  };
+  input.click();
+};
+
 window.doLogout = function() {
   if (!confirm('确认退出登录？')) return;
   _currentUser = null;
@@ -1050,9 +1158,19 @@ window.submitLoan=function(){
   };
   const loans=DB_get('loans')||[];
   loans.push(loan); DB_set('loans',loans);
-  showMsg('loanMsg',`✅ ${t('saved')} #${loan.id} — ${cust}`,'green');
-  // 立即强制保存到服务器，不等800ms延迟
-  saveDB();
+  // 强制保存，等待结果
+  const saveBtn = document.querySelector('button[onclick="submitLoan()"]');
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='⏳ 保存中...'; }
+  showMsg('loanMsg','⏳ 正在保存到服务器...','');
+  saveDB().then(()=>{
+    if(!_dirty){
+      showMsg('loanMsg',`✅ 保存成功！合同 #${loan.id} — ${cust} 已安全存入数据库`,'green');
+      if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
+    } else {
+      showMsg('loanMsg',`❌ 保存失败！请点击"手动备份"保存数据后重试`,'red');
+      if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
+    }
+  });
   ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const mpEl=document.getElementById('lMonthlyPayment');if(mpEl)mpEl.value='';
   ['lAmount','lFirstDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -1558,8 +1676,14 @@ window.submitPayment=function(){
   const pays=DB_get('payments')||[];
   pays.push({id:newId(),loanId,customer:l.customer,period:periodNo,date:pDate,paidPrincipal:principal,paidInterest:interest,penalty});
   DB_set('payments',pays);
-  saveDB(); // 立即保存，防止数据丢失
-  showMsg('payMsg',`✅ #${loanId} ${l.customer} — ${t('period')} ${periodNo} · ${fmt(principal+interest+penalty)}`,'green');
+  showMsg('payMsg','⏳ 正在保存收款记录...','');
+  saveDB().then(()=>{
+    if(!_dirty){
+      showMsg('payMsg',`✅ 收款成功！#${loanId} ${l.customer} — ${t('period')} ${periodNo} · ${fmt(principal+interest+penalty)}`,'green');
+    } else {
+      showMsg('payMsg','❌ 保存失败！请截图记录后点击手动备份','red');
+    }
+  });
   document.getElementById('pPenalty').value='0';
   document.getElementById('pTotal').value='';
   loadLoanPeriods(); updateBadges();
@@ -1788,9 +1912,15 @@ window.submitExtension=function(){
   const exts=DB_get('extensions')||[];
   exts.push({id:newId(),loanId:id,customer:l.customer,date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   DB_set('extensions',exts);
-  saveDB(); // 立即保存，防止数据丢失
-  showMsg('extMsg',`✅ #${id} ${l.customer} — ${_lang==='km'?'បន្ត':_lang==='en'?'Extended +':'+'}${extPeriods} ${t('period')}`,'green');
-  setTimeout(()=>nav('extension'),600);
+  showMsg('extMsg','⏳ 正在保存续期记录...','');
+  saveDB().then(()=>{
+    if(!_dirty){
+      showMsg('extMsg',`✅ 续期成功！#${id} ${l.customer} — +${extPeriods} ${t('period')}`,'green');
+      setTimeout(()=>nav('extension'),1500);
+    } else {
+      showMsg('extMsg','❌ 保存失败！请点击手动备份保存数据后重试','red');
+    }
+  });
 };
 
 // ══════════════════════════════════════════════════════
@@ -1984,9 +2114,28 @@ window.deleteExpense=function(id){
 // COMPANY
 // ══════════════════════════════════════════════════════
 function renderCompany(){
+  // 在公司设置页显示备份管理
+  const backupSection = isAdmin() ? `
+  <div class="card" style="margin-bottom:14px;border:2px solid #ffd700">
+    <div class="card-title" style="color:#e65100;margin-bottom:10px">💾 数据备份管理</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">建议每天备份一次，保存到安全位置。如遇数据丢失可用备份文件恢复。</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="downloadBackup()">💾 立即备份数据</button>
+      <button class="btn btn-outline" onclick="restoreBackup()" style="border-color:#c62828;color:#c62828">🔄 从备份恢复</button>
+    </div>
+  </div>` : '';
   const co=DB_get('company')||{};
   return `
   <div class="page-header"><div class="page-title">⚙️ ${t('company')}</div></div>
+  ${isAdmin() ? `
+  <div class="card" style="margin-bottom:14px;border:2px solid var(--amber)">
+    <div class="card-title" style="color:var(--amber);margin-bottom:10px">💾 数据备份管理</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">建议每天备份一次，保存到本地电脑。如遇数据丢失可用备份文件一键恢复。</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="downloadBackup()">💾 立即备份数据</button>
+      <button class="btn btn-outline" onclick="restoreBackup()" style="border-color:var(--red);color:var(--red)">🔄 从备份文件恢复</button>
+    </div>
+  </div>` : ''}
   <div class="card">
     <div class="form-grid">
       <div class="form-group"><label>${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Company Name':'公司名称'}</label><input id="coName" value="${esc(co.name||'')}"></div>
