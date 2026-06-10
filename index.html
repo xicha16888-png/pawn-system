@@ -503,24 +503,40 @@ function checkLogin() {
   if (saved) { try { _currentUser = JSON.parse(saved); return true; } catch(e) {} }
   return false;
 }
-window.doLogin = function() {
+window.doLogin = async function() {
   const username = (document.getElementById('loginUsername')?.value||'').trim();
   const password = (document.getElementById('loginPassword')?.value||'').trim();
   const msg = document.getElementById('loginMsg');
+  const loginBtn = document.querySelector('#loginScreen button');
   if (!username || !password) { msg.textContent='请输入用户名和密码'; return; }
-  // DB加载完才能查用户
+  
+  msg.textContent='⏳ 登录中...'; msg.style.color='#1565c0';
+  if(loginBtn){ loginBtn.disabled=true; loginBtn.textContent='登录中...'; }
+  
+  // 如果DB未加载，先加载
   if(!_dbReady){
-    msg.textContent='系统正在初始化，请稍候再试...';
-    setTimeout(()=>{ msg.textContent=''; }, 2000);
-    return;
+    const r = await loadDB();
+    if(!r.ok){
+      msg.textContent='❌ 网络连接失败，请刷新重试';
+      msg.style.color='#c62828';
+      if(loginBtn){ loginBtn.disabled=false; loginBtn.textContent='登 录'; }
+      return;
+    }
   }
+  
   const users = getUsers();
   const user = users.find(u => u.username===username && u.password===password);
-  if (!user) { msg.textContent='用户名或密码错误'; msg.style.color='#c62828'; return; }
+  if (!user) {
+    msg.textContent='用户名或密码错误';
+    msg.style.color='#c62828';
+    if(loginBtn){ loginBtn.disabled=false; loginBtn.textContent='登 录'; }
+    return;
+  }
   _currentUser = user;
   sessionStorage.setItem('pawn_user', JSON.stringify(user));
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appShell').style.display='';
+  if(loginBtn){ loginBtn.disabled=false; loginBtn.textContent='登 录'; }
   updateUserBadge();
   nav(_currentPage||'home');
 };
