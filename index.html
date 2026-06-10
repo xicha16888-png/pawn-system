@@ -572,10 +572,8 @@ window.downloadBackup = async function() {
       l.lockStatus||'未锁', l.blacklist?'黑名单':'白名单', l.createdBy||''
     ]);
     function toCSV(headers, rows) {
-      const esc = v => { const s=String(v??'').replace(/"/g,'""'); return (s.includes(',')||s.includes('"')||s.includes('
-'))?`"${s}"`:s; };
-      return '﻿' + [headers.join(','), ...rows.map(r=>r.map(esc).join(','))].join('
-');
+      const esc = v => { const s=String(v??'').replace(/"/g,'""'); return (s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s}"`:s; };
+      return '﻿' + [headers.join(','), ...rows.map(r=>r.map(esc).join(','))].join('\n');
     }
     const a2 = document.createElement('a');
     a2.href = URL.createObjectURL(new Blob([toCSV(loanHeaders,loanRows)],{type:'text/csv;charset=utf-8'}));
