@@ -1538,6 +1538,33 @@ window.saveEditLoan=function(){
     note: document.getElementById('edit_note').value.trim(),
   };
 
+  // 如果首次还款日改变了，重新计算未还款期数的还款日期
+  const newFirstDue = document.getElementById('edit_firstDue').value||l.firstDue;
+  if(newFirstDue && newFirstDue !== l.firstDue) {
+    const schedule = loans[idx].schedule;
+    // 找出第一个未还款的期数（从1开始重排日期）
+    let baseDate = new Date(newFirstDue);
+    let firstUnpaidPeriod = null;
+    for(let i=0; i<schedule.length; i++){
+      if(!schedule[i].paid){
+        firstUnpaidPeriod = schedule[i].period;
+        break;
+      }
+    }
+    if(firstUnpaidPeriod !== null){
+      for(let i=0; i<schedule.length; i++){
+        if(!schedule[i].paid){
+          // 计算该期相对于firstDue的偏移月数
+          const offset = schedule[i].period - firstUnpaidPeriod;
+          const d = new Date(newFirstDue);
+          d.setMonth(d.getMonth() + offset);
+          schedule[i].dueDate = d.toISOString().slice(0,10);
+        }
+      }
+      loans[idx].schedule = schedule;
+    }
+  }
+
   DB_set('loans', loans);
   closeEditModal();
 
@@ -2306,7 +2333,7 @@ window.saveCompany=function(){
 
     <!-- 警告提示 -->
     <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:12px;color:#5d4037">
-      ⚠️ <b>注意：</b>修改贷款金额或月利息不会自动更新已有的还款计划，如需更新请联系管理员。客户信息、手机信息、联系方式等可随时修改。
+      ⚠️ <b>注意：</b>修改<b>首次还款日</b>会自动更新所有<b>未还款</b>期数的还款日期。修改贷款金额或月利息不会自动更新还款计划，如需更新请联系管理员。
     </div>
 
     <div id="editLoanMsg"></div>
