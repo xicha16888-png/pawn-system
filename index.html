@@ -1125,6 +1125,22 @@ function renderLoanAdd(){
 // 创单时材料预览暂存
 window._pendingDocs={};
 
+window.removePreviewDoc=function(docKey){
+  delete window._pendingDocs[docKey];
+  const preview=document.getElementById(`docPreview_${docKey}`);
+  if(preview) preview.innerHTML='';
+  const slot=document.getElementById(`docSlot_${docKey}`);
+  if(slot) slot.style.border='1px solid '+({
+    'id-card-front':'#90caf9','id-card-back':'#90caf9','household-cover':'#90caf9','household-page':'#90caf9',
+    'fb-1':'#ce93d8','fb-2':'#ce93d8','fb-3':'#ce93d8','fb-4':'#ce93d8',
+    'bank-1':'#a5d6a7','bank-2':'#a5d6a7','bank-3':'#a5d6a7',
+    'payment-qr':'#ffcc80','risk-form':'#9fa8da','contract':'#9fa8da','contract-selfie':'#9fa8da',
+    'spare-1':'#e0e0e0','spare-2':'#e0e0e0','spare-3':'#e0e0e0'
+  }[docKey]||'#ddd');
+  const cnt=Object.keys(window._pendingDocs).length;
+  const el=document.getElementById('docCount'); if(el) el.textContent=cnt;
+};
+
 window.previewDoc=async function(docKey, input){
   const file=input.files[0]; if(!file) return;
   const slot=document.getElementById(`docSlot_${docKey}`);
@@ -1133,7 +1149,7 @@ window.previewDoc=async function(docKey, input){
   const base64=await compressImage(file,500);
   window._pendingDocs[docKey]=base64;
   // 预览
-  if(preview) preview.innerHTML=`<img src="${base64}" style="width:100%;max-height:80px;object-fit:cover;border-radius:6px;margin-bottom:4px"><div style="font-size:10px;color:var(--green);font-weight:700">✅ 已选择</div>`;
+  if(preview) preview.innerHTML=`<img src="${base64}" style="width:100%;max-height:70px;object-fit:cover;border-radius:6px;margin-bottom:4px"><div style="display:flex;gap:4px;justify-content:center;margin-top:2px"><span style="font-size:10px;color:var(--green);font-weight:700">✅ 已选择</span><button type="button" onclick="removePreviewDoc('${docKey}')" style="background:#c62828;color:#fff;border:none;border-radius:4px;padding:1px 8px;font-size:10px;cursor:pointer;font-family:inherit">✕ 删除</button></div>`;
   if(slot) slot.style.border='2px solid var(--green)';
   // 更新计数
   const cnt=Object.keys(window._pendingDocs).length;
