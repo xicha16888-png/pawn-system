@@ -1014,6 +1014,8 @@ function renderLoanAdd(){
       <div class="form-group"><label>${t('customerName')}</label><input id="lCust" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Full name':'客户全名'}"></div>
       <div class="form-group"><label>${t('customerPhone')}</label><input id="lPhone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone number':'联系电话'}"></div>
       <div class="form-group"><label>${t('customerId')}</label><input id="lId" placeholder="${_lang==='km'?'លេខ':_lang==='en'?'ID number':'身份证号'}"></div>
+      <div class="form-group"><label>${_lang==='km'?'ថ្ងៃខែឆ្នាំកំណើត':_lang==='en'?'Date of Birth':'出生年月日'}</label><input type="date" id="lDob" oninput="calcAgeFromDob()"></div>
+      <div class="form-group"><label>${_lang==='km'?'អាយុ':_lang==='en'?'Age':'年龄'}</label><input type="number" id="lAge" placeholder="${_lang==='km'?'ស្វ័យប្រវត្តិ':_lang==='en'?'Auto-calculated':'自动计算'}" min="18" max="99" style="background:#f5f5f5"></div>
       <div class="form-group"><label>${t('shopName')}</label><input id="lShop" placeholder="${_lang==='km'?'ហាង':_lang==='en'?'Store':'店铺名称'}"></div>
       <div class="form-group"><label>${t('salesperson')}</label><input id="lSales" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'业务员'}"></div>
     </div>
