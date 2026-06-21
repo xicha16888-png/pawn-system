@@ -1109,6 +1109,21 @@ function renderLoanAdd(){
       </div>
       <div class="form-group span3"><label>${t('remarks')}</label><input id="lNote" placeholder="${_lang==='km'?'ស្រេចចិត្ត':_lang==='en'?'Optional':'可选备注'}"></div>
     </div>
+    <div class="card" style="background:#f1f8e9;border:1px solid #c5e1a5;margin-top:4px;padding:16px">
+      <div style="font-size:13px;font-weight:700;color:#33691e;margin-bottom:12px">📎 客户材料 <span style="font-size:11px;font-weight:400;color:var(--muted)">（选填，可保存后补传）</span></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px" id="createDocsGrid">
+        ${[{k:'id-card',lb:'🪪 身份证'},{k:'household',lb:'📖 户口本'},{k:'fb-screenshot',lb:'📱 FB截图'},{k:'bank-statement',lb:'🏦 银行流水'}].map(({k,lb})=>`
+        <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #c5e1a5;text-align:center" id="docSlot_${k}">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--navy)">${lb}</div>
+          <div id="docPreview_${k}" style="margin-bottom:6px"></div>
+          <label style="cursor:pointer;background:#558b2f;color:#fff;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;display:inline-block">
+            📷 选择图片
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="previewDoc('${k}',this)">
+          </label>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted)" id="docUploadStatus">已选 <b id="docCount">0</b>/4 张</div>
+    </div>
     <div class="btn-row">
       <button class="btn btn-success" onclick="submitLoan()">${t('saveLoan')}</button>
       <button class="btn btn-outline" onclick="nav('loan-list')">${t('viewLoans')}</button>
@@ -1116,6 +1131,24 @@ function renderLoanAdd(){
     <div id="loanMsg" style="margin-top:10px"></div>
   </div>`;
 }
+
+// 创单时材料预览暂存
+window._pendingDocs={};
+
+window.previewDoc=async function(docKey, input){
+  const file=input.files[0]; if(!file) return;
+  const slot=document.getElementById(`docSlot_${docKey}`);
+  const preview=document.getElementById(`docPreview_${docKey}`);
+  // 压缩
+  const base64=await compressImage(file,500);
+  window._pendingDocs[docKey]=base64;
+  // 预览
+  if(preview) preview.innerHTML=`<img src="${base64}" style="width:100%;max-height:80px;object-fit:cover;border-radius:6px;margin-bottom:4px"><div style="font-size:10px;color:var(--green);font-weight:700">✅ 已选择</div>`;
+  if(slot) slot.style.border='2px solid var(--green)';
+  // 更新计数
+  const cnt=Object.keys(window._pendingDocs).length;
+  const el=document.getElementById('docCount'); if(el) el.textContent=cnt;
+};
 
 window.autoSetFirstDue=function(){
   const lDate=document.getElementById('lDate')?.value;
@@ -1235,16 +1268,46 @@ window.submitLoan=function(){
   const saveBtn = document.querySelector('button[onclick="submitLoan()"]');
   if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='⏳ 保存中...'; }
   showMsg('loanMsg','⏳ 正在保存到服务器...','');
-  saveDB().then(()=>{
+  saveDB().then(async ()=>{
     if(!_dirty){
-      showMsg('loanMsg',`✅ 保存成功！合同 #${loan.id} — ${cust} 已安全存入数据库`,'green');
+      showMsg('loanMsg',`✅ 合同 #${loan.id} 保存成功！`,'green');
       if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
+      // 上传待传图片
+      const docs=window._pendingDocs||{};
+      const docKeys=Object.keys(docs);
+      if(docKeys.length>0){
+        showMsg('loanMsg',`✅ 合同已保存，正在上传 ${docKeys.length} 张材料...`,'green');
+        let uploaded=0; let failed=0;
+        for(const docKey of docKeys){
+          try{
+            const res=await fetch('/api/upload-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loanId:loan.id,docKey,base64:docs[docKey]})});
+            const json=await res.json();
+            if(json.ok){
+              // 更新本地数据
+              const loans2=DB_get('loans')||[];
+              const l2=loans2.find(x=>x.id===loan.id);
+              if(l2){if(!l2.documents)l2.documents={};l2.documents[docKey]=json.url;DB_set('loans',loans2);}
+              uploaded++;
+            } else { failed++; }
+          } catch(e){ failed++; }
+        }
+        window._pendingDocs={};
+        if(failed===0) showMsg('loanMsg',`✅ 合同 #${loan.id} 保存成功！材料已上传 ${uploaded} 张 📎`,'green');
+        else showMsg('loanMsg',`✅ 合同已保存，材料上传 ${uploaded} 成功 / ${failed} 失败（可进合同详情补传）`,'green');
+      }
     } else {
       showMsg('loanMsg',`❌ 保存失败！请点击"手动备份"保存数据后重试`,'red');
       if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
     }
   });
   ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel','lReferralName','lReducedRate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});;
+  // 清空材料预览
+  window._pendingDocs={};
+  ['id-card','household','fb-screenshot','bank-statement'].forEach(k=>{
+    const p=document.getElementById(`docPreview_${k}`); if(p) p.innerHTML='';
+    const s=document.getElementById(`docSlot_${k}`); if(s) s.style.border='1px solid #c5e1a5';
+  });
+  const cnt=document.getElementById('docCount'); if(cnt) cnt.textContent='0';
   const mpEl=document.getElementById('lMonthlyPayment');if(mpEl)mpEl.value='';
   ['lAmount','lFirstDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('lStorage').value='';
@@ -1331,6 +1394,7 @@ function buildLoanTable(loans){
         <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}
           ${l.interestType==='reduced'?`<span style="display:block;margin-top:3px;font-size:10px;background:#ff6f00;color:#fff;border-radius:4px;padding:1px 5px;font-weight:600">↓降息${l.reducedRate||''}%</span>`:''}
           ${l.interestType==='referral'?`<span style="display:block;margin-top:3px;font-size:10px;background:#7b1fa2;color:#fff;border-radius:4px;padding:1px 5px;font-weight:600">🤝转介绍</span>`:''}
+          ${(()=>{const docs=l.documents||{};const cnt=['id-card','household','fb-screenshot','bank-statement'].filter(k=>docs[k]).length;return cnt===4?'<span style="display:block;margin-top:3px;font-size:10px;background:#2e7d32;color:#fff;border-radius:4px;padding:1px 5px">📎材料齐全</span>':cnt>0?`<span style="display:block;margin-top:3px;font-size:10px;background:#f57c00;color:#fff;border-radius:4px;padding:1px 5px">📎${cnt}/4</span>`:'<span style="display:block;margin-top:3px;font-size:10px;background:#bdbdbd;color:#fff;border-radius:4px;padding:1px 5px">📎未传</span>';})()}
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
