@@ -1022,8 +1022,14 @@ function renderLoanAdd(){
   <div class="card" style="border-left:4px solid var(--orange)">
     <div class="card-title" style="margin-bottom:14px">📱 ${_lang==='km'?'ព័ត៌មានទូរសព្ទ':_lang==='en'?'Phone Info':'手机信息'}</div>
     <div class="form-grid">
-      <div class="form-group"><label>${t('phoneBrand')}</label><input id="lBrand" placeholder="Apple / Samsung / Oppo..."></div>
-      <div class="form-group"><label>${t('phoneModel')}</label><input id="lModel" placeholder="iPhone 15 Pro / S24..."></div>
+      <div class="form-group"><label>${t('phoneBrand')}</label><input id="lBrand" placeholder="Apple / Samsung / Oppo..." oninput="onBrandChange(this.value)"></div>
+      <div class="form-group"><label>${t('phoneModel')}</label>
+        <input id="lModel" placeholder="iPhone 15 Pro / S24...">
+        <select id="lModelSelect" style="display:none;width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;margin-top:4px;outline:none" onchange="document.getElementById('lModel').value=this.value">
+          <option value="">— 选择iPhone型号 —</option>
+          <option value="12">12</option><option value="12Pro">12Pro</option><option value="12ProMax">12ProMax</option><option value="13">13</option><option value="13Pro">13Pro</option><option value="13ProMax">13ProMax</option><option value="14">14</option><option value="14Plus">14Plus</option><option value="14Pro">14Pro</option><option value="14ProMax">14ProMax</option><option value="15">15</option><option value="15Plus">15Plus</option><option value="15Pro">15Pro</option><option value="15ProMax">15ProMax</option><option value="16">16</option><option value="16Plus">16Plus</option><option value="16Pro">16Pro</option><option value="16ProMax">16ProMax</option><option value="17">17</option><option value="17 Air">17 Air</option><option value="17 Pro">17 Pro</option><option value="17 Pro Max">17 Pro Max</option>
+        </select>
+      </div>
       <div class="form-group"><label>${t('phoneStorage')}</label>
         <select id="lStorage"><option value="">—</option>${storageOpts.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
       </div>
@@ -1140,6 +1146,34 @@ window.previewDoc=async function(docKey, input){
   // 更新计数
   const cnt=Object.keys(window._pendingDocs).length;
   const el=document.getElementById('docCount'); if(el) el.textContent=cnt;
+};
+
+window.onBrandChange=function(val){
+  const isApple=val.trim().toLowerCase()==='apple';
+  const modelInput=document.getElementById('lModel');
+  const modelSelect=document.getElementById('lModelSelect');
+  if(!modelInput||!modelSelect) return;
+  if(isApple){
+    modelInput.style.display='none';
+    modelSelect.style.display='';
+    if(modelSelect.value) modelInput.value=modelSelect.value;
+  } else {
+    modelInput.style.display='';
+    modelSelect.style.display='none';
+    modelSelect.value='';
+  }
+};
+
+window.calcAgeFromDob=function(){
+  const dob=document.getElementById('lDob')?.value;
+  const ageEl=document.getElementById('lAge');
+  if(!dob||!ageEl) return;
+  const today=new Date();
+  const birth=new Date(dob);
+  let age=today.getFullYear()-birth.getFullYear();
+  const m=today.getMonth()-birth.getMonth();
+  if(m<0||(m===0&&today.getDate()<birth.getDate())) age--;
+  ageEl.value=age>0?age:'';
 };
 
 window.autoSetFirstDue=function(){
