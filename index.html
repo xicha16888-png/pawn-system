@@ -774,6 +774,7 @@ function buildSidebar(){
     <div style="padding:4px 0">
       <div class="sb-label">${t('reports')}</div>
       <div class="nav-item" data-page="stats"><span class="nav-icon">📊</span>${t('stats')} 🔐</div>
+      <div class="nav-item" data-page="bad-debt"><span class="nav-icon">⚠️</span>${_lang==='km'?'វិភាគបំណុលអាក្រក់':_lang==='en'?'Bad Debt Analysis':'坏账分析'} 🔐</div>
       <div class="nav-item" data-page="finance"><span class="nav-icon">📈</span>${t('financeReport')} 🔐</div>
       <div class="nav-item" data-page="expenses"><span class="nav-icon">🧾</span>${t('expenses')} 🔐</div>
     </div>
@@ -838,7 +839,7 @@ window.closeMobMore=function(){
 };
 
 // ── Password Protection ──
-const PROTECTED=['stats','finance','expenses'];
+const PROTECTED=['stats','finance','expenses','bad-debt'];
 const PWD='morodok888';
 let _unlocked=false;
 function requirePwd(page,cb){
@@ -873,13 +874,14 @@ const PAGES={
   'user-mgmt':renderUserMgmt,'home':renderHome,'loan-add':renderLoanAdd,'loan-list':renderLoanList,
   'payment-add':renderPaymentAdd,'extension':renderExtension,
   'stats':renderStats,'finance':renderFinance,'expenses':renderExpenses,
+  'bad-debt':renderBadDebt,
   'overdue':renderOverdue,'tomorrow':renderTomorrow,'company':renderCompany,
   'appointment':renderAppointment,
 };
 // 只读用户只能访问的页面
 const READONLY_PAGES = ['home','loan-list'];
 // 员工不能访问的页面
-const STAFF_BLOCKED = ['stats','stats-interest','finance','expenses'];
+const STAFF_BLOCKED = ['stats','stats-interest','finance','expenses','bad-debt'];
 
 function nav(page){
   buildSidebar(); buildMobNav(page); closeMobMore();
@@ -2206,6 +2208,194 @@ function renderStats(){
 // ══════════════════════════════════════════════════════
 // FINANCE REPORT
 // ══════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// BAD DEBT ANALYSIS 坏账分析
+// ══════════════════════════════════════════════════════
+function renderBadDebt(){
+  const loans=DB_get('loans')||[];
+  const td=today();
+  const tab=window._badDebtTab||'age';
+
+  // 逾期天数计算
+  function getOverdueDays(l){
+    if(l.status==='已结清') return 0;
+    let maxDays=0;
+    (l.schedule||[]).forEach(p=>{
+      if(!p.paid&&p.dueDate<td){
+        const d=daysDiff(p.dueDate,td);
+        if(d>maxDays) maxDays=d;
+      }
+    });
+    return maxDays;
+  }
+
+  function getOverdueLevel(days){
+    if(days===0) return null;
+    if(days<=30) return {label:'关注',color:'#f9a825',bg:'#fff8e1'};
+    if(days<=60) return {label:'次级',color:'#ef6c00',bg:'#fff3e0'};
+    if(days<=90) return {label:'可疑',color:'#c62828',bg:'#ffebee'};
+    return {label:'坏账',color:'#7b1fa2',bg:'#f3e5f5'};
+  }
+
+  // 所有逾期贷款
+  const overdueLoans=loans.filter(l=>l.status==='进行中'&&getOverdueDays(l)>0);
+  const total=overdueLoans.length;
+  const totalAmt=overdueLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
+
+  // 各阶段统计
+  const levels={关注:0,次级:0,可疑:0,坏账:0};
+  const levelAmt={关注:0,次级:0,可疑:0,坏账:0};
+  overdueLoans.forEach(l=>{
+    const lv=getOverdueLevel(getOverdueDays(l));
+    if(lv){levels[lv.label]++;levelAmt[lv.label]+=(+l.loanAmount||0);}
+  });
+
+  const levelColors={关注:'#f9a825',次级:'#ef6c00',可疑:'#c62828',坏账:'#7b1fa2'};
+
+  // ── 年龄段分析 ──
+  function renderAge(){
+    const groups={'18-25':{cnt:0,amt:0},'26-35':{cnt:0,amt:0},'36-45':{cnt:0,amt:0},'46+':{cnt:0,amt:0},'未知':{cnt:0,amt:0}};
+    overdueLoans.forEach(l=>{
+      const age=+l.customerAge||0;
+      const g=age>=18&&age<=25?'18-25':age>=26&&age<=35?'26-35':age>=36&&age<=45?'36-45':age>=46?'46+':'未知';
+      groups[g].cnt++; groups[g].amt+=(+l.loanAmount||0);
+    });
+    return `<div class="table-wrap"><table>
+      <tr><th>年龄段</th><th>逾期笔数</th><th>逾期金额</th><th>占比</th><th>风险等级</th></tr>
+      ${Object.entries(groups).map(([g,v])=>{
+        const pct=total>0?((v.cnt/total)*100).toFixed(1):0;
+        const risk=v.cnt===0?'—':+pct>=30?'🔴 高风险':+pct>=15?'🟡 中风险':'🟢 低风险';
+        return `<tr>
+          <td class="fw700">${g}岁</td>
+          <td class="fw700 text-red">${v.cnt}</td>
+          <td class="fw700 text-amber">${fmt(v.amt)}</td>
+          <td><div style="display:flex;align-items:center;gap:6px">
+            <div style="background:#eee;border-radius:4px;height:8px;width:80px;overflow:hidden">
+              <div style="background:#c62828;height:100%;width:${pct}%"></div>
+            </div>${pct}%</div></td>
+          <td>${risk}</td>
+        </tr>`;
+      }).join('')}
+    </table></div>
+    <div class="alert" style="background:#fff8e1;border-left:4px solid #f9a825;margin-top:10px;font-size:12px">
+      ⚠️ 提示：若客户年龄未录入，会归入"未知"分组。建议在录单时填写客户年龄以获得准确分析。
+    </div>`;
+  }
+
+  // ── 借款金额区间分析 ──
+  function renderAmount(){
+    const groups={'<$100':{cnt:0,amt:0},'$100-300':{cnt:0,amt:0},'$300-500':{cnt:0,amt:0},'$500+':{cnt:0,amt:0}};
+    overdueLoans.forEach(l=>{
+      const a=+l.loanAmount||0;
+      const g=a<100?'<$100':a<=300?'$100-300':a<=500?'$300-500':'$500+';
+      groups[g].cnt++; groups[g].amt+=a;
+    });
+    return `<div class="table-wrap"><table>
+      <tr><th>借款金额</th><th>逾期笔数</th><th>逾期金额</th><th>占比</th><th>风险等级</th></tr>
+      ${Object.entries(groups).map(([g,v])=>{
+        const pct=total>0?((v.cnt/total)*100).toFixed(1):0;
+        const risk=v.cnt===0?'—':+pct>=30?'🔴 高风险':+pct>=15?'🟡 中风险':'🟢 低风险';
+        return `<tr>
+          <td class="fw700">${g}</td>
+          <td class="fw700 text-red">${v.cnt}</td>
+          <td class="fw700 text-amber">${fmt(v.amt)}</td>
+          <td><div style="display:flex;align-items:center;gap:6px">
+            <div style="background:#eee;border-radius:4px;height:8px;width:80px;overflow:hidden">
+              <div style="background:#c62828;height:100%;width:${pct}%"></div>
+            </div>${pct}%</div></td>
+          <td>${risk}</td>
+        </tr>`;
+      }).join('')}
+    </table></div>`;
+  }
+
+  // ── 机型分析 ──
+  function renderModel(){
+    const modelMap={};
+    overdueLoans.forEach(l=>{
+      const brand=(l.phoneBrand||'其他').trim();
+      const key=brand==='Apple'||brand.toLowerCase().includes('iphone')?'Apple iPhone':
+                brand==='Samsung'||brand.toLowerCase().includes('samsung')?'Samsung':
+                brand==='Oppo'||brand.toLowerCase().includes('oppo')?'Oppo':
+                brand==='Vivo'||brand.toLowerCase().includes('vivo')?'Vivo':
+                brand==='Xiaomi'||brand.toLowerCase().includes('xiaomi')?'Xiaomi':'其他';
+      if(!modelMap[key]) modelMap[key]={cnt:0,amt:0};
+      modelMap[key].cnt++; modelMap[key].amt+=(+l.loanAmount||0);
+    });
+    const sorted=Object.entries(modelMap).sort((a,b)=>b[1].cnt-a[1].cnt);
+    return `<div class="table-wrap"><table>
+      <tr><th>手机品牌</th><th>逾期笔数</th><th>逾期金额</th><th>占比</th><th>风险等级</th></tr>
+      ${sorted.map(([g,v])=>{
+        const pct=total>0?((v.cnt/total)*100).toFixed(1):0;
+        const risk=v.cnt===0?'—':+pct>=30?'🔴 高风险':+pct>=15?'🟡 中风险':'🟢 低风险';
+        return `<tr>
+          <td class="fw700">${g}</td>
+          <td class="fw700 text-red">${v.cnt}</td>
+          <td class="fw700 text-amber">${fmt(v.amt)}</td>
+          <td><div style="display:flex;align-items:center;gap:6px">
+            <div style="background:#eee;border-radius:4px;height:8px;width:80px;overflow:hidden">
+              <div style="background:#c62828;height:100%;width:${pct}%"></div>
+            </div>${pct}%</div></td>
+          <td>${risk}</td>
+        </tr>`;
+      }).join('')}
+    </table></div>`;
+  }
+
+  // ── 逾期明细 ──
+  function renderDetail(){
+    if(!overdueLoans.length) return `<div class="empty-state"><div class="ei">✅</div><p>暂无逾期贷款</p></div>`;
+    return `<div class="table-wrap"><table>
+      <tr><th>#</th><th>客户</th><th>手机型号</th><th>贷款额</th><th>逾期天数</th><th>逾期阶段</th></tr>
+      ${overdueLoans.slice().sort((a,b)=>getOverdueDays(b)-getOverdueDays(a)).map(l=>{
+        const days=getOverdueDays(l);
+        const lv=getOverdueLevel(days);
+        return `<tr>
+          <td><a href="#" onclick="viewLoan(${l.id});return false" class="text-blue fw700">#${l.id}</a></td>
+          <td class="fw700">${esc(l.customer)}<div style="font-size:11px;color:var(--muted)">${esc(l.customerPhone||'')}</div></td>
+          <td style="font-size:12px">${esc(l.phoneModel||'—')}</td>
+          <td class="fw700 text-amber">${fmt(l.loanAmount)}</td>
+          <td class="fw700 text-red">${days}天</td>
+          <td><span style="background:${lv?.bg};color:${lv?.color};border:1px solid ${lv?.color}44;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700">${lv?.label}</span></td>
+        </tr>`;
+      }).join('')}
+    </table></div>`;
+  }
+
+  return `
+  <div class="page-header"><div class="page-title">⚠️ 坏账分析</div></div>
+
+  <div class="stats-grid">
+    <div class="stat-card red"><span class="stat-icon">⚠️</span><div class="stat-label">逾期总笔数</div><div class="stat-value">${total}</div><div class="stat-sub">进行中贷款</div></div>
+    <div class="stat-card red"><span class="stat-icon">💸</span><div class="stat-label">逾期总金额</div><div class="stat-value">${fmt(totalAmt)}</div></div>
+    <div class="stat-card amber"><span class="stat-icon">📊</span><div class="stat-label">逾期率</div><div class="stat-value">${loans.filter(l=>l.status==='进行中').length>0?((total/loans.filter(l=>l.status==='进行中').length)*100).toFixed(1):0}%</div><div class="stat-sub">占进行中贷款</div></div>
+    <div class="stat-card purple"><span class="stat-icon">🚨</span><div class="stat-label">坏账金额</div><div class="stat-value">${fmt(levelAmt['坏账'])}</div><div class="stat-sub">逾期90天以上</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:12px">📊 逾期阶段分布</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      ${['关注','次级','可疑','坏账'].map(lv=>`
+        <div style="background:${lv==='关注'?'#fff8e1':lv==='次级'?'#fff3e0':lv==='可疑'?'#ffebee':'#f3e5f5'};border-radius:10px;padding:12px;text-align:center;border-left:3px solid ${levelColors[lv]}">
+          <div style="font-size:11px;color:${levelColors[lv]};font-weight:700">${lv} (${lv==='关注'?'1-30天':lv==='次级'?'31-60天':lv==='可疑'?'61-90天':'90天+'})</div>
+          <div style="font-size:22px;font-weight:700;color:${levelColors[lv]};margin:6px 0">${levels[lv]}</div>
+          <div style="font-size:12px;color:${levelColors[lv]}">${fmt(levelAmt[lv])}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button onclick="window._badDebtTab='age';nav('bad-debt')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='age'?'#c62828':'#e0e0e0'};color:${tab==='age'?'#fff':'var(--text)'}">👤 年龄段分析</button>
+    <button onclick="window._badDebtTab='amount';nav('bad-debt')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='amount'?'#c62828':'#e0e0e0'};color:${tab==='amount'?'#fff':'var(--text)'}">💰 借款金额分析</button>
+    <button onclick="window._badDebtTab='model';nav('bad-debt')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='model'?'#c62828':'#e0e0e0'};color:${tab==='model'?'#fff':'var(--text)'}">📱 机型分析</button>
+    <button onclick="window._badDebtTab='detail';nav('bad-debt')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='detail'?'#c62828':'#e0e0e0'};color:${tab==='detail'?'#fff':'var(--text)'}">📋 逾期明细</button>
+  </div>
+
+  <div class="card">
+    ${tab==='age'?renderAge():tab==='amount'?renderAmount():tab==='model'?renderModel():renderDetail()}
+  </div>`;
+}
+
 function renderFinance(){
   const tab=window._financeTab||'normal';
   return `
