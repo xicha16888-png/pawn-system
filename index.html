@@ -765,6 +765,7 @@ function buildSidebar(){
     <div style="padding:4px 0">
       <div class="sb-label">${t('loanMgmt')}</div>
       <div class="nav-item" data-page="loan-add"><span class="nav-icon">➕</span>${t('loanAdd')}</div>
+      <div class="nav-item" data-page="appointment"><span class="nav-icon">📅</span>${_lang==='km'?'ការណាត់ជួប':_lang==='en'?'Appointments':'客服预约'}</div>
       <div class="nav-item" data-page="loan-list"><span class="nav-icon">🔍</span>${t('loanList')}</div>
       <div class="nav-item" data-page="payment-add"><span class="nav-icon">💰</span>${t('paymentAdd')}</div>
       <div class="nav-item" data-page="extension"><span class="nav-icon">🔄</span>${t('extension')}</div>
@@ -873,6 +874,7 @@ const PAGES={
   'payment-add':renderPaymentAdd,'extension':renderExtension,
   'stats':renderStats,'finance':renderFinance,'expenses':renderExpenses,
   'overdue':renderOverdue,'tomorrow':renderTomorrow,'company':renderCompany,
+  'appointment':renderAppointment,
 };
 // 只读用户只能访问的页面
 const READONLY_PAGES = ['home','loan-list'];
@@ -2257,6 +2259,181 @@ function renderFinanceReferral(){
     </table></div>`:`<div class="empty-state"><div class="ei">🤝</div><p>暂无转介绍合同</p></div>`}
   </div>`;
 }
+
+// ══════════════════════════════════════════════════════
+// APPOINTMENT 客服预约
+// ══════════════════════════════════════════════════════
+function renderAppointment(){
+  const appts=DB_get('appointments')||[];
+  const tab=window._apptTab||'list';
+  const sources=['Facebook','TikTok','Instagram','转介绍','自然到店','其他'];
+  const stores=DB_get('stores')||[];
+  const storeOpts=stores.length?stores.map(s=>`<option>${esc(s.name||s)}</option>`).join(''):`<option>MORODOK总店</option>`;
+  const statusColor={待到店:'#1565c0',已到店:'#2e7d32',已成交:'#6a1b9a',爽约:'#b71c1c'};
+
+  // 今日和明日提醒数
+  const td=today();
+  const tom=new Date(td); tom.setDate(tom.getDate()+1);
+  const tomorrow=tom.toISOString().slice(0,10);
+  const todayAppts=appts.filter(a=>a.arrivalDate===td&&a.status==='待到店').length;
+  const tomAppts=appts.filter(a=>a.arrivalDate===tomorrow&&a.status==='待到店').length;
+
+  return `
+  <div class="page-header">
+    <div class="page-title">📅 客服预约</div>
+  </div>
+
+  ${todayAppts>0?`<div class="alert" style="background:#e3f2fd;border-left:4px solid #1565c0;color:#0d3b6e;margin-bottom:12px">📌 今日有 <b>${todayAppts}</b> 个预约待到店</div>`:''}
+  ${tomAppts>0?`<div class="alert" style="background:#fff8e1;border-left:4px solid #f9a825;color:#5f4000;margin-bottom:12px">⏰ 明日有 <b>${tomAppts}</b> 个预约</div>`:''}
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button onclick="window._apptTab='list';nav('appointment')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='list'?'var(--navy)':'#e0e0e0'};color:${tab==='list'?'#fff':'var(--text)'}">📋 预约列表</button>
+    <button onclick="window._apptTab='add';nav('appointment')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='add'?'var(--green)':'#e0e0e0'};color:${tab==='add'?'#fff':'var(--text)'}">➕ 新建预约</button>
+  </div>
+
+  ${tab==='add'?`
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">➕ 新建预约单</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>1. 客户姓名 *</label>
+        <input id="apptCust" placeholder="客户全名（英文）">
+      </div>
+      <div class="form-group">
+        <label>2. 联系方式 *</label>
+        <input id="apptPhone" placeholder="电话号码" type="tel">
+      </div>
+      <div class="form-group">
+        <label>3. 客户来源 *</label>
+        <select id="apptSource">
+          ${sources.map(s=>`<option>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>4. 手机型号</label>
+        <input id="apptModel" placeholder="如：iPhone 14 Pro Max 128G">
+      </div>
+      <div class="form-group">
+        <label>5. 到店日期 *</label>
+        <input type="date" id="apptDate" value="${td}">
+      </div>
+      <div class="form-group">
+        <label>到店时间</label>
+        <input type="time" id="apptTime" value="10:00">
+      </div>
+      <div class="form-group">
+        <label>6. 服务地点 *</label>
+        <select id="apptStore">${storeOpts}</select>
+      </div>
+      <div class="form-group">
+        <label>7. 预约客服</label>
+        <input id="apptStaff" value="${_currentUser?.name||_currentUser?.username||''}" placeholder="客服姓名">
+      </div>
+      <div class="form-group span3">
+        <label>备注</label>
+        <input id="apptNote" placeholder="可选备注">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="submitAppointment()">💾 保存预约单</button>
+      <button class="btn btn-outline" onclick="window._apptTab='list';nav('appointment')">取消</button>
+    </div>
+    <div id="apptMsg" style="margin-top:10px"></div>
+  </div>`:`
+
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="card-title" style="margin:0">预约单列表（${appts.length} 条）</div>
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+        ${['全部','待到店','已到店','已成交','爽约'].map(s=>`
+          <button onclick="window._apptFilter='${s}';nav('appointment')" style="padding:4px 12px;border:none;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:${(window._apptFilter||'全部')===s?'var(--navy)':'#e0e0e0'};color:${(window._apptFilter||'全部')===s?'#fff':'var(--text)'}">${s}</button>
+        `).join('')}
+      </div>
+    </div>
+    ${(()=>{
+      const filter=window._apptFilter||'全部';
+      const list=filter==='全部'?appts:appts.filter(a=>a.status===filter);
+      const sorted=list.slice().sort((a,b)=>(a.arrivalDate+a.arrivalTime)<(b.arrivalDate+b.arrivalTime)?1:-1);
+      if(!sorted.length) return `<div class="empty-state"><div class="ei">📅</div><p>暂无预约记录</p></div>`;
+      return `<div class="table-wrap"><table>
+        <tr><th>#</th><th>客户</th><th>联系方式</th><th>来源</th><th>手机型号</th><th>到店时间</th><th>地点</th><th>客服</th><th>状态</th><th>操作</th></tr>
+        ${sorted.map(a=>`<tr>
+          <td style="font-size:12px;color:var(--muted)">${a.id}</td>
+          <td class="fw700">${esc(a.customer)}</td>
+          <td style="font-size:12px">${esc(a.phone)}</td>
+          <td><span class="badge badge-gray" style="font-size:11px">${esc(a.source)}</span></td>
+          <td style="font-size:12px">${esc(a.phoneModel||'—')}</td>
+          <td style="font-size:12px;white-space:nowrap">${a.arrivalDate}<br><span style="color:var(--muted)">${a.arrivalTime||''}</span></td>
+          <td style="font-size:12px">${esc(a.store||'—')}</td>
+          <td style="font-size:12px">${esc(a.staffName||'—')}</td>
+          <td><span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:${statusColor[a.status]||'#aaa'}22;color:${statusColor[a.status]||'#555'};border:1px solid ${statusColor[a.status]||'#aaa'}44">${a.status}</span></td>
+          <td>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <select onchange="updateApptStatus(${a.id},this.value);this.value=''" style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid #ddd;font-family:inherit;cursor:pointer">
+                <option value="">更新状态</option>
+                <option value="待到店">待到店</option>
+                <option value="已到店">已到店</option>
+                <option value="已成交">已成交</option>
+                <option value="爽约">爽约</option>
+              </select>
+              ${a.status==='已到店'?`<button class="btn btn-success btn-sm" onclick="nav('loan-add')" title="转为贷款合同">📋转单</button>`:''}
+              ${isAdmin()||isManager()?`<button class="btn btn-danger btn-sm" onclick="deleteAppointment(${a.id})">删除</button>`:''}
+            </div>
+          </td>
+        </tr>`).join('')}
+      </table></div>`;
+    })()}
+  </div>`}`;
+}
+
+window.submitAppointment=function(){
+  const customer=document.getElementById('apptCust')?.value?.trim();
+  const phone=document.getElementById('apptPhone')?.value?.trim();
+  const source=document.getElementById('apptSource')?.value;
+  const arrivalDate=document.getElementById('apptDate')?.value;
+  if(!customer||!phone||!arrivalDate){
+    showMsg('apptMsg','请填写客户姓名、联系方式和到店日期','red');return;
+  }
+  const appts=DB_get('appointments')||[];
+  const maxId=appts.length?Math.max(...appts.map(a=>a.id||0)):3000;
+  const appt={
+    id:maxId+1,
+    customer,phone,source,
+    phoneModel:document.getElementById('apptModel')?.value?.trim()||'',
+    arrivalDate,
+    arrivalTime:document.getElementById('apptTime')?.value||'',
+    store:document.getElementById('apptStore')?.value||'',
+    staffName:document.getElementById('apptStaff')?.value?.trim()||(_currentUser?.name||''),
+    note:document.getElementById('apptNote')?.value?.trim()||'',
+    status:'待到店',
+    createdAt:new Date().toISOString().slice(0,10),
+    createdBy:_currentUser?.username||'',
+  };
+  appts.push(appt);
+  DB_set('appointments',appts);
+  saveDB();
+  showMsg('apptMsg','✅ 预约单已保存！','green');
+  setTimeout(()=>{window._apptTab='list';nav('appointment');},800);
+};
+
+window.updateApptStatus=function(id,status){
+  if(!status) return;
+  const appts=DB_get('appointments')||[];
+  const a=appts.find(x=>x.id===id);
+  if(!a) return;
+  a.status=status;
+  DB_set('appointments',appts);
+  saveDB();
+  nav('appointment');
+};
+
+window.deleteAppointment=function(id){
+  if(!confirm('确定删除这条预约记录？')) return;
+  const appts=(DB_get('appointments')||[]).filter(a=>a.id!==id);
+  DB_set('appointments',appts);
+  saveDB();
+  nav('appointment');
+};
 
 // ══════════════════════════════════════════════════════
 // REMINDERS
