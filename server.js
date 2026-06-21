@@ -122,6 +122,44 @@ app.get('/api/backup', async (req, res) => {
   }
 });
 
+// ── 材料上传（需要Supabase Storage Pro）──
+app.post('/api/upload-doc', async (req, res) => {
+  try {
+    const { loanId, docKey, base64 } = req.body;
+    if (!loanId || !docKey || !base64) return res.json({ ok: false, error: '参数缺失' });
+
+    // base64 → Buffer
+    const matches = base64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+    if (!matches) return res.json({ ok: false, error: '图片格式错误' });
+    const buffer = Buffer.from(matches[2], 'base64');
+    const filePath = `loans/${loanId}/${docKey}.jpg`;
+
+    const { error } = await supabase.storage
+      .from('pawn-documents')
+      .upload(filePath, buffer, { contentType: 'image/jpeg', upsert: true });
+    if (error) return res.json({ ok: false, error: error.message });
+
+    const { data: urlData } = supabase.storage
+      .from('pawn-documents')
+      .getPublicUrl(filePath);
+
+    res.json({ ok: true, url: urlData.publicUrl });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/delete-doc', async (req, res) => {
+  try {
+    const { loanId, docKey } = req.body;
+    const filePath = `loans/${loanId}/${docKey}.jpg`;
+    await supabase.storage.from('pawn-documents').remove([filePath]);
+    res.json({ ok: true });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`\n${'═'.repeat(50)}`);
   console.log(`  📱 手机抵押贷款管理系统`);
