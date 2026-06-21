@@ -1024,12 +1024,22 @@ function renderLoanAdd(){
   <div class="card" style="border-left:4px solid var(--orange)">
     <div class="card-title" style="margin-bottom:14px">📱 ${_lang==='km'?'ព័ត៌មានទូរសព្ទ':_lang==='en'?'Phone Info':'手机信息'}</div>
     <div class="form-grid">
-      <div class="form-group"><label>${t('phoneBrand')}</label><input id="lBrand" placeholder="Apple / Samsung / Oppo..." oninput="onBrandChange(this.value)"></div>
+      <div class="form-group"><label>${t('phoneBrand')}</label>
+        <select id="lBrand" onchange="onBrandChange(this.value)" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
+          <option value="">— 选择品牌 —</option>
+          <option value="Apple">Apple</option>
+          <option value="Samsung">Samsung</option>
+          <option value="Oppo">Oppo</option>
+          <option value="Vivo">Vivo</option>
+          <option value="Xiaomi">Xiaomi</option>
+          <option value="Huawei">Huawei</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
       <div class="form-group"><label>${t('phoneModel')}</label>
-        <input id="lModel" placeholder="iPhone 15 Pro / S24...">
-        <select id="lModelSelect" style="display:none;width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;margin-top:4px;outline:none" onchange="document.getElementById('lModel').value=this.value">
-          <option value="">— 选择iPhone型号 —</option>
-          <option value="12">12</option><option value="12Pro">12Pro</option><option value="12ProMax">12ProMax</option><option value="13">13</option><option value="13Pro">13Pro</option><option value="13ProMax">13ProMax</option><option value="14">14</option><option value="14Plus">14Plus</option><option value="14Pro">14Pro</option><option value="14ProMax">14ProMax</option><option value="15">15</option><option value="15Plus">15Plus</option><option value="15Pro">15Pro</option><option value="15ProMax">15ProMax</option><option value="16">16</option><option value="16Plus">16Plus</option><option value="16Pro">16Pro</option><option value="16ProMax">16ProMax</option><option value="17">17</option><option value="17 Air">17 Air</option><option value="17 Pro">17 Pro</option><option value="17 Pro Max">17 Pro Max</option>
+        <input id="lModel" placeholder="输入型号..." style="display:none">
+        <select id="lModelSelect" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none" onchange="onModelChange(this.value)">
+          <option value="">— 先选品牌 —</option>
         </select>
       </div>
       <div class="form-group"><label>${t('phoneStorage')}</label>
@@ -1150,19 +1160,52 @@ window.previewDoc=async function(docKey, input){
   const el=document.getElementById('docCount'); if(el) el.textContent=cnt;
 };
 
+// iPhone型号→内存对应表
+const IPHONE_DATA={
+  '12':['64G','128G'],'12Pro':['128G','256G'],'12ProMax':['128G','256G'],
+  '13':['128G','256G'],'13Pro':['128G','256G'],'13ProMax':['128G','256G'],
+  '14':['128G','256G'],'14Plus':['128G','256G'],'14Pro':['128G','256G'],'14ProMax':['128G','256G'],
+  '15':['128G','256G'],'15Plus':['128G','256G'],'15Pro':['128G','256G'],'15ProMax':['256G','512G'],
+  '16':['128G','256G'],'16Plus':['128G','256G'],'16Pro':['128G','256G'],'16ProMax':['256G','512G'],
+  '17':['256G','512G'],'17 Air':['256G','512G','1TB'],'17 Pro':['256G','512G','1TB'],'17 Pro Max':['256G','512G','1TB'],
+};
+
 window.onBrandChange=function(val){
-  const isApple=val.trim().toLowerCase()==='apple';
-  const modelInput=document.getElementById('lModel');
   const modelSelect=document.getElementById('lModelSelect');
-  if(!modelInput||!modelSelect) return;
-  if(isApple){
+  const modelInput=document.getElementById('lModel');
+  const storageSelect=document.getElementById('lStorage');
+  if(!modelSelect) return;
+  if(val==='Apple'){
     modelInput.style.display='none';
     modelSelect.style.display='';
-    if(modelSelect.value) modelInput.value=modelSelect.value;
+    modelSelect.innerHTML='<option value="">— 选择iPhone型号 —</option>'+
+      Object.keys(IPHONE_DATA).map(m=>`<option value="${m}">${m}</option>`).join('');
+    // 重置内存
+    storageSelect.innerHTML='<option value="">—</option>';
+  } else if(val===''){
+    modelSelect.innerHTML='<option value="">— 先选品牌 —</option>';
+    modelInput.style.display='none';
+    modelSelect.style.display='';
   } else {
+    // 其他品牌：手动输入
     modelInput.style.display='';
+    modelInput.placeholder='输入型号...';
     modelSelect.style.display='none';
-    modelSelect.value='';
+    // 恢复内存选项
+    const allStorage=['64G','128G','256G','512G','1TB'];
+    storageSelect.innerHTML='<option value="">—</option>'+allStorage.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+};
+
+window.onModelChange=function(val){
+  const storageSelect=document.getElementById('lStorage');
+  if(!storageSelect) return;
+  if(val&&IPHONE_DATA[val]){
+    const opts=IPHONE_DATA[val];
+    storageSelect.innerHTML='<option value="">—</option>'+opts.map(s=>`<option value="${s}">${s}</option>`).join('');
+    if(opts.length===1) storageSelect.value=opts[0];
+  } else {
+    storageSelect.innerHTML='<option value="">—</option>';
   }
 };
 
@@ -1227,7 +1270,10 @@ window.submitLoan=function(){
   if(_currentUser&&(_currentUser.role==='readonly')){alert('无权限：只读账户不能录入合同');return;}
   const cust=document.getElementById('lCust')?.value?.trim();
   if(!cust){showMsg('loanMsg',t('msgFillCustomer'),'red');return;}
-  const model=document.getElementById('lModel')?.value?.trim();
+  const brand=document.getElementById('lBrand')?.value||'';
+  const modelSelectEl=document.getElementById('lModelSelect');
+  const modelInputEl=document.getElementById('lModel');
+  const model=brand==='Apple'?(modelSelectEl?.value?.trim()||''):(modelInputEl?.value?.trim()||'');
   if(!model){showMsg('loanMsg',t('msgFillModel'),'red');return;}
   const cond=document.getElementById('lCond')?.value;
   if(!cond){showMsg('loanMsg',t('msgFillCondition'),'red');return;}
@@ -1267,7 +1313,7 @@ window.submitLoan=function(){
     customerId:document.getElementById('lId')?.value?.trim()||'',
     shopName:document.getElementById('lShop')?.value?.trim()||'',
     salesperson:document.getElementById('lSales')?.value?.trim()||'',
-    phoneBrand:document.getElementById('lBrand')?.value?.trim()||'',
+    phoneBrand:brand,
     phoneModel:model,
     phoneStorage:document.getElementById('lStorage')?.value||'',
     phoneColor:document.getElementById('lColor')?.value?.trim()||'',
