@@ -1281,6 +1281,8 @@ window.submitLoan=function(){
             } else { failed++; }
           } catch(e){ failed++; }
         }
+        // ⚠️ 关键：图片URL更新后必须再次saveDB同步回Supabase
+        if(uploaded>0) await saveDB();
         window._pendingDocs={};
         if(failed===0) showMsg('loanMsg',`✅ 合同 #${loan.id} 保存成功！材料已上传 ${uploaded} 张 📎`,'green');
         else showMsg('loanMsg',`✅ 合同已保存，材料上传 ${uploaded} 成功 / ${failed} 失败（可进合同详情补传）`,'green');
