@@ -1396,6 +1396,26 @@ window.viewLoan=function(id){
         ).join('')}
       </div>
     </div>
+    <div style="background:#e8f5e9;border-radius:8px;padding:12px;margin-bottom:12px;border-left:3px solid var(--green)">
+      <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:10px">📎 客户材料</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+        ${[{k:'id-card',lb:'🪪 身份证'},{k:'household',lb:'📖 户口本'},{k:'fb-screenshot',lb:'📱 FB截图'},{k:'bank-statement',lb:'🏦 银行流水'}].map(({k:docKey,lb})=>{
+          const hasDoc=l.documents&&l.documents[docKey];
+          return '<div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #c8e6c9;text-align:center">'+
+            '<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--navy)">'+lb+'</div>'+
+            (hasDoc
+              ?'<img src="'+hasDoc+'" style="width:100%;max-height:90px;object-fit:cover;border-radius:6px;cursor:pointer;margin-bottom:6px" onclick="window.open(\''+hasDoc+'\')">'+
+               '<div style="display:flex;gap:4px;justify-content:center">'+
+               '<a href="'+hasDoc+'" target="_blank" class="btn btn-outline btn-sm">查看</a>'+
+               '<button class="btn btn-danger btn-sm" onclick="deleteDoc('+l.id+',\''+docKey+'\')">删除</button></div>'
+              :'<div style="color:var(--muted);font-size:11px;margin-bottom:8px">未上传</div>'+
+               '<label style="cursor:pointer;background:var(--green);color:#fff;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;display:inline-block">📤 上传'+
+               '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="uploadDoc('+l.id+',\''+docKey+'\',this)"></label>')+
+            '</div>';
+        }).join('')}
+      </div>
+      <div id="uploadMsg_${l.id}" style="margin-top:8px;font-size:12px;text-align:center;color:var(--green)"></div>
+    </div>
     <div class="table-wrap"><table>
       <tr><th>${t('period')}</th><th>${t('colDate')}</th><th>${t('paidPrincipal')}</th><th>${t('paidInterest')}</th><th>${_lang==='km'?'ប្រាក់ពិន័យ':_lang==='en'?'Late Fee':'滞纳金'}</th><th>${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Status':'状态'}</th></tr>
       ${l.schedule.map(p=>{
@@ -1413,6 +1433,73 @@ window.viewLoan=function(id){
     </table></div>
   `);
 };
+// 前端图片压缩
+async function compressImage(file, maxKB=500){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width, h=img.height;
+        const maxPx=1600;
+        if(w>maxPx||h>maxPx){ const r=Math.min(maxPx/w,maxPx/h); w=Math.round(w*r); h=Math.round(h*r); }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        let q=0.85;
+        const tryCompress=()=>{
+          const dataUrl=canvas.toDataURL('image/jpeg',q);
+          const kb=(dataUrl.length*3/4)/1024;
+          if(kb<=maxKB||q<=0.3){ resolve(dataUrl); return; }
+          q-=0.1; tryCompress();
+        };
+        tryCompress();
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+window.uploadDoc=async function(loanId, docKey, input){
+  const file=input.files[0]; if(!file) return;
+  const msgEl=document.getElementById(`uploadMsg_${loanId}`);
+  if(msgEl) msgEl.textContent='⏳ 压缩上传中...';
+  try{
+    const base64=await compressImage(file,500);
+    const res=await fetch(`/api/upload-doc`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({loanId,docKey,base64})
+    });
+    const json=await res.json();
+    if(!json.ok) throw new Error(json.error||'上传失败');
+    // 更新本地loans数据
+    const loans=DB_get('loans')||[];
+    const loan=loans.find(l=>l.id===loanId);
+    if(loan){ if(!loan.documents) loan.documents={}; loan.documents[docKey]=json.url; DB_set('loans',loans); }
+    if(msgEl) msgEl.textContent='✅ 上传成功！';
+    setTimeout(()=>viewLoan(loanId),600);
+  }catch(e){
+    if(msgEl){ msgEl.style.color='var(--red)'; msgEl.textContent='❌ '+e.message; }
+  }
+};
+
+window.deleteDoc=async function(loanId, docKey){
+  if(!confirm('确定删除这张图片？')) return;
+  try{
+    await fetch(`/api/delete-doc`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({loanId,docKey})
+    });
+    const loans=DB_get('loans')||[];
+    const loan=loans.find(l=>l.id===loanId);
+    if(loan&&loan.documents) { delete loan.documents[docKey]; DB_set('loans',loans); }
+    viewLoan(loanId);
+  }catch(e){ alert('删除失败：'+e.message); }
+};
+
 window.toggleLockStatus=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
