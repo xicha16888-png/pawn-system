@@ -911,7 +911,7 @@ function nav(page){
   }
 }
 function initPage(page){
-  if(page==='loan-add') calcLoan();
+  if(page==='loan-add'){ calcLoan(); autoSetFirstDue(); }
   if(page==='payment-add') loadLoanPeriods();
   if(page==='extension') loadExtLoan();
 }
@@ -1006,7 +1006,7 @@ function renderLoanAdd(){
       <div class="form-group span3"><label>🔖 ${_lang==='km'?'លេខកិច្ចសន្យា':_lang==='en'?'Contract No.':'合同编号'}</label>
         <input id="lContractNo" placeholder="${_lang==='km'?'លេខ（ស្រេចចិត្ត）':_lang==='en'?'Contract number (optional, auto if blank)':'合同编号（选填，不填则系统自动编号）'}" style="font-size:14px;font-weight:600;border:2px solid #f57c00;background:#fffde7">
       </div>
-      <div class="form-group"><label>${t('loanDate')}</label><input type="date" id="lDate" value="${today()}"></div>
+      <div class="form-group"><label>${t('loanDate')}</label><input type="date" id="lDate" value="${today()}" oninput="autoSetFirstDue()"></div>
       <div class="form-group"><label>${t('customerName')}</label><input id="lCust" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Full name':'客户全名'}"></div>
       <div class="form-group"><label>${t('customerPhone')}</label><input id="lPhone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone number':'联系电话'}"></div>
       <div class="form-group"><label>${t('customerId')}</label><input id="lId" placeholder="${_lang==='km'?'លេខ':_lang==='en'?'ID number':'身份证号'}"></div>
@@ -1067,7 +1067,7 @@ function renderLoanAdd(){
           ${[1,2,3,4,5,6,9,12].map(p=>`<option value="${p}" ${p===3?'selected':''}>${p} ${t('period')}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>${t('firstDue')}</label><input type="date" id="lFirstDue"></div>
+      <div class="form-group"><label>${t('firstDue')} <span style="font-size:10px;color:var(--muted);font-weight:400">${_lang==='km'?'(ស្វ័យប្រវត្តិ)':_lang==='en'?'(auto)':'(自动)'}</span></label><input type="date" id="lFirstDue"></div>
     </div>
     <div style="background:#e3f2fd;border-radius:8px;padding:14px;margin-top:12px">
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
@@ -1114,6 +1114,15 @@ function renderLoanAdd(){
     <div id="loanMsg" style="margin-top:10px"></div>
   </div>`;
 }
+
+window.autoSetFirstDue=function(){
+  const lDate=document.getElementById('lDate')?.value;
+  const firstDueEl=document.getElementById('lFirstDue');
+  if(!lDate||!firstDueEl) return;
+  const d=new Date(lDate);
+  d.setMonth(d.getMonth()+1);
+  firstDueEl.value=d.toISOString().slice(0,10);
+};
 
 window.onInterestTypeChange=function(){
   const type=document.getElementById('lInterestType')?.value;
