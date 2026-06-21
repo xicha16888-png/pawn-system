@@ -1078,6 +1078,33 @@ function renderLoanAdd(){
       </div>
     </div>
     <div class="form-grid" style="margin-top:12px">
+      <div class="form-group">
+        <label>${_lang==='km'?'ប្រភេទការប្រាក់':_lang==='en'?'Interest Type':'利息类型'}</label>
+        <select id="lInterestType" onchange="onInterestTypeChange()">
+          <option value="normal">${_lang==='km'?'ធម្មតា (11.5%)':_lang==='en'?'Normal (11.5%)':'正常利息 (11.5%)'}</option>
+          <option value="reduced">${_lang==='km'?'បញ្ចុះការប្រាក់':_lang==='en'?'Reduced Rate':'降息订单'}</option>
+          <option value="referral">${_lang==='km'?'បញ្ជូន':_lang==='en'?'Referral':'转介绍'}</option>
+        </select>
+      </div>
+      <div class="form-group" id="reducedRateGroup" style="display:none">
+        <label>${_lang==='km'?'អត្រាការប្រាក់ជាក់ស្តែង (%)':_lang==='en'?'Actual Monthly Rate (%)':'实际月息 (%) 最低8.5%'}</label>
+        <input type="number" id="lReducedRate" placeholder="8.5" min="8.5" max="11.4" step="0.1" style="color:var(--orange);font-weight:700">
+      </div>
+      <div class="form-group span3" id="referralGroup" style="display:none">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>${_lang==='km'?'ប្រភេទអ្នកណែនាំ':_lang==='en'?'Referrer Type':'推荐人类型'}</label>
+            <select id="lReferralType">
+              <option value="customer">${_lang==='km'?'អតិថិជន':_lang==='en'?'Customer':'客户'}</option>
+              <option value="staff">${_lang==='km'?'បុគ្គលិក':_lang==='en'?'Staff':'内部员工'}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>${_lang==='km'?'ឈ្មោះអ្នកណែនាំ':_lang==='en'?'Referrer Name':'推荐人姓名'}</label>
+            <input id="lReferralName" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'推荐人全名'}">
+          </div>
+        </div>
+      </div>
       <div class="form-group span3"><label>${t('remarks')}</label><input id="lNote" placeholder="${_lang==='km'?'ស្រេចចិត្ត':_lang==='en'?'Optional':'可选备注'}"></div>
     </div>
     <div class="btn-row">
@@ -1087,6 +1114,14 @@ function renderLoanAdd(){
     <div id="loanMsg" style="margin-top:10px"></div>
   </div>`;
 }
+
+window.onInterestTypeChange=function(){
+  const type=document.getElementById('lInterestType')?.value;
+  const reducedGroup=document.getElementById('reducedRateGroup');
+  const referralGroup=document.getElementById('referralGroup');
+  if(reducedGroup) reducedGroup.style.display=(type==='reduced')?'':'none';
+  if(referralGroup) referralGroup.style.display=(type==='referral')?'':'none';
+};
 
 window.calcLoan=function(){
   // 兼容旧路径：如果直接调用calcLoan，也触发从还款金额计算
@@ -1177,6 +1212,10 @@ window.submitLoan=function(){
     monthlyPrincipal:parseFloat(mP.toFixed(2)),
     totalInterest:parseFloat((mInt*periods).toFixed(2)),
     note:document.getElementById('lNote')?.value?.trim()||'',
+    interestType:document.getElementById('lInterestType')?.value||'normal',
+    reducedRate:document.getElementById('lInterestType')?.value==='reduced'?(+(document.getElementById('lReducedRate')?.value||0)):null,
+    referralType:document.getElementById('lInterestType')?.value==='referral'?(document.getElementById('lReferralType')?.value||''):null,
+    referralName:document.getElementById('lInterestType')?.value==='referral'?(document.getElementById('lReferralName')?.value?.trim()||''):null,
     schedule,status:'进行中',extensions:[]
   };
   const loans=DB_get('loans')||[];
@@ -1194,7 +1233,7 @@ window.submitLoan=function(){
       if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
     }
   });
-  ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel','lReferralName','lReducedRate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});;
   const mpEl=document.getElementById('lMonthlyPayment');if(mpEl)mpEl.value='';
   ['lAmount','lFirstDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('lStorage').value='';
@@ -1278,7 +1317,10 @@ function buildLoanTable(loans){
             ${l.blacklist?(_lang==='km'?'🚫黑名单':_lang==='en'?'🚫 Black':'🚫 黑名单'):(_lang==='km'?'✅白名单':_lang==='en'?'✅ White':'✅ 白名单')}
           </button>`}
         </td>
-        <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}</td>
+        <td>${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}
+          ${l.interestType==='reduced'?`<span style="display:block;margin-top:3px;font-size:10px;background:#ff6f00;color:#fff;border-radius:4px;padding:1px 5px;font-weight:600">↓降息${l.reducedRate||''}%</span>`:''}
+          ${l.interestType==='referral'?`<span style="display:block;margin-top:3px;font-size:10px;background:#7b1fa2;color:#fff;border-radius:4px;padding:1px 5px;font-weight:600">🤝转介绍</span>`:''}
+        </td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
           ${(_currentUser&&_currentUser.role==='readonly') ? '' : canEditLoan(l) ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
@@ -1308,6 +1350,12 @@ window.viewLoan=function(id){
         <div style="font-size:12px">${t('totalInterest')} <b>${fmt(l.totalInterest)}</b></div>
         <div style="font-size:12px">${l.monthlyRate}% ${_lang==='en'?'monthly rate':'月利率'}</div>
         ${l.actualAmount?`<div style="font-size:12px;color:var(--amber);font-weight:700;margin-top:4px">💵 ${_lang==='en'?'Actual Disbursement':'实际放款'}: ${fmt(l.actualAmount)}</div>`:''}
+        <div style="margin-top:6px">
+          ${l.interestType==='reduced'?`<span style="background:#ff6f00;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">↓ 降息 ${l.reducedRate||''}%</span>`:''}
+          ${l.interestType==='referral'?`<span style="background:#7b1fa2;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">🤝 转介绍</span>`:''}
+          ${l.interestType==='normal'||!l.interestType?`<span style="background:#1b5e20;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">✅ 正常利息</span>`:''}
+        </div>
+        ${l.interestType==='referral'&&l.referralName?`<div style="font-size:12px;color:#7b1fa2;font-weight:600;margin-top:4px">👤 推荐人: ${esc(l.referralName)} (${l.referralType==='staff'?'员工':'客户'})</div>`:''}
       </div>
     </div>
     <div style="background:#f3e5f5;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #9c27b0;font-size:12px">
