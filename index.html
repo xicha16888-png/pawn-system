@@ -1263,7 +1263,7 @@ window.submitLoan=function(){
       showMsg('loanMsg',`✅ 合同 #${loan.id} 保存成功！`,'green');
       if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
       // 上传待传图片
-      const docs=window._pendingDocs||{};
+      const docs=_docsToUpload||{};
       const docKeys=Object.keys(docs);
       if(docKeys.length>0){
         showMsg('loanMsg',`✅ 合同已保存，正在上传 ${docKeys.length} 张材料...`,'green');
@@ -1283,7 +1283,6 @@ window.submitLoan=function(){
         }
         // ⚠️ 关键：图片URL更新后必须再次saveDB同步回Supabase
         if(uploaded>0) await saveDB();
-        window._pendingDocs={};
         if(failed===0) showMsg('loanMsg',`✅ 合同 #${loan.id} 保存成功！材料已上传 ${uploaded} 张 📎`,'green');
         else showMsg('loanMsg',`✅ 合同已保存，材料上传 ${uploaded} 成功 / ${failed} 失败（可进合同详情补传）`,'green');
       }
@@ -1293,11 +1292,12 @@ window.submitLoan=function(){
     }
   });
   ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel','lReferralName','lReducedRate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});;
-  // 清空材料预览
+  // 清空材料预览UI（但不清空_pendingDocs，让上传流程自己清）
+  const _docsToUpload=Object.assign({},window._pendingDocs);
   window._pendingDocs={};
-  ['id-card','household','fb-screenshot','bank-statement'].forEach(k=>{
+  ['id-card-front','id-card-back','household-cover','household-page','fb-1','fb-2','fb-3','fb-4','bank-1','bank-2','bank-3','payment-qr','risk-form','contract','contract-selfie','spare-1','spare-2','spare-3'].forEach(k=>{
     const p=document.getElementById(`docPreview_${k}`); if(p) p.innerHTML='';
-    const s=document.getElementById(`docSlot_${k}`); if(s) s.style.border='1px solid #c5e1a5';
+    const s=document.getElementById(`docSlot_${k}`); if(s) s.style.border='';
   });
   const cnt=document.getElementById('docCount'); if(cnt) cnt.textContent='0';
   const mpEl=document.getElementById('lMonthlyPayment');if(mpEl)mpEl.value='';
