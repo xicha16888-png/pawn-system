@@ -1841,7 +1841,11 @@ window.saveEditLoan=function(){
   const customer = document.getElementById('edit_customer').value.trim();
   if(!customer){ document.getElementById('editLoanMsg').innerHTML='<div style="color:red;font-size:13px;margin-bottom:8px">⚠️ 客户姓名不能为空</div>'; return; }
 
-  // 更新字段（不动还款计划）
+  const newMonthlyInterest = +(document.getElementById('edit_monthlyInterest').value)||l.monthlyInterest;
+  const newLoanAmount = +(document.getElementById('edit_loanAmount').value)||l.loanAmount;
+  const newMonthlyPrincipal = l.periods>0 ? newLoanAmount/l.periods : (l.monthlyPrincipal||0);
+
+  // 更新字段
   loans[idx] = {
     ...l,
     contractNo: document.getElementById('edit_contractNo').value.trim(),
@@ -1855,12 +1859,23 @@ window.saveEditLoan=function(){
     phoneModel: document.getElementById('edit_phoneModel').value.trim(),
     phoneImei: document.getElementById('edit_phoneImei').value.trim(),
     phoneNote: document.getElementById('edit_phoneNote').value.trim(),
-    loanAmount: +(document.getElementById('edit_loanAmount').value)||l.loanAmount,
+    loanAmount: newLoanAmount,
     actualAmount: +(document.getElementById('edit_actualAmount').value)||l.actualAmount||0,
-    monthlyInterest: +(document.getElementById('edit_monthlyInterest').value)||l.monthlyInterest,
+    monthlyInterest: newMonthlyInterest,
+    monthlyPrincipal: newMonthlyPrincipal,
     firstDue: document.getElementById('edit_firstDue').value||l.firstDue,
     note: document.getElementById('edit_note').value.trim(),
   };
+
+  // 如果月利息或贷款金额改变，更新未还款期数的金额
+  if(newMonthlyInterest !== l.monthlyInterest || newLoanAmount !== l.loanAmount){
+    loans[idx].schedule = loans[idx].schedule.map(p=>{
+      if(!p.paid){
+        return {...p, paidInterest:0, paidPrincipal:0};
+      }
+      return p;
+    });
+  }
 
   // 如果首次还款日改变了，重新计算未还款期数的还款日期
   const newFirstDue = document.getElementById('edit_firstDue').value||l.firstDue;
@@ -3242,7 +3257,7 @@ window.saveCompany=function(){
 
     <!-- 警告提示 -->
     <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:12px;color:#5d4037">
-      ⚠️ <b>注意：</b>修改<b>首次还款日</b>会自动更新所有<b>未还款</b>期数的还款日期。修改贷款金额或月利息不会自动更新还款计划，如需更新请联系管理员。
+      ⚠️ <b>注意：</b>修改<b>月利息</b>或<b>贷款金额</b>后，未还款期数会自动更新金额。修改<b>首次还款日</b>会自动更新所有未还款期数的还款日期。
     </div>
 
     <div id="editLoanMsg"></div>
