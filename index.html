@@ -916,7 +916,6 @@ function nav(page){
 }
 function initPage(page){
   if(page==='loan-add'){ calcLoan(); autoSetFirstDue(); }
-  if(page==='loan-list'){ setTimeout(()=>restoreDayGroups&&restoreDayGroups(),50); }
   if(page==='payment-add') loadLoanPeriods();
   if(page==='extension') loadExtLoan();
 }
@@ -1433,7 +1432,7 @@ window.filterLoans=function(){
   if(st) list=list.filter(l=>l.status===st);
   if(mo) list=list.filter(l=>l.date.slice(0,7)===mo);
   const wrap=document.getElementById('loanTableWrap');
-  if(wrap){ wrap.innerHTML=buildLoanTable(list.slice().reverse()); restoreDayGroups(); }
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
 function buildLoanTable(loans){
   if(!loans.length) return `<div class="empty-state"><div class="ei">📋</div><p>${t('noRecord')}</p></div>`;
@@ -1455,15 +1454,15 @@ function buildLoanTable(loans){
     const totalAmt=dayLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
     return `<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden">
       <div onclick="toggleDayGroup('${uid}')" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#f0f4ff;cursor:pointer;user-select:none;border-bottom:1px solid #e0e0e0">
-        <span id="${uid}_icon" style="font-size:14px;transition:.2s">▶</span>
+        <span id="${uid}_icon" style="font-size:14px;transition:.2s">${window._openDays&&window._openDays.has(uid)?'▼':'▶'}</span>
         <span style="font-weight:700;color:var(--navy);font-size:14px">📅 ${date}</span>
         <span style="background:var(--navy);color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700">${dayLoans.length} 笔</span>
         <span style="color:var(--orange);font-weight:700;font-size:13px">${fmt(totalAmt)}</span>
       </div>
-      <div id="${uid}" style="overflow:auto;display:none">
+      <div id="${uid}" style="overflow:auto;display:${window._openDays&&window._openDays.has(uid)?'':'none'}">
         <table style="width:100%;border-collapse:collapse">
           ${thead}
-          ${loans.map(l=>{
+          ${dayLoans.map(l=>{
       const paid=l.schedule.filter(p=>p.paid).length;
       const isOverdue=l.status==='进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
       const condColors={cond100:'cond-new',cond95:'cond-9',cond9:'cond-9',cond8:'cond-8',cond7:'cond-7'};
@@ -1534,17 +1533,6 @@ window.toggleDayGroup=function(uid){
     if(icon)icon.textContent='▶';
     window._openDays.delete(uid);
   }
-};
-
-// 渲染后恢复展开状态
-window.restoreDayGroups=function(){
-  if(!window._openDays||!window._openDays.size) return;
-  window._openDays.forEach(uid=>{
-    const el=document.getElementById(uid);
-    const icon=document.getElementById(uid+'_icon');
-    if(el){el.style.display='';}
-    if(icon){icon.textContent='▼';}
-  });
 };
 window.viewLoan=function(id){
   const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
@@ -1704,7 +1692,7 @@ window.toggleLockStatus=function(id){
   if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
   if(st) list=list.filter(l=>l.status===st);
   const wrap=document.getElementById('loanTableWrap');
-  if(wrap){ wrap.innerHTML=buildLoanTable(list.slice().reverse()); restoreDayGroups(); }
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
 window.toggleBlacklist=function(id){
   const loans=DB_get('loans')||[];
@@ -1717,7 +1705,7 @@ window.toggleBlacklist=function(id){
   if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
   if(st) list=list.filter(l=>l.status===st);
   const wrap=document.getElementById('loanTableWrap');
-  if(wrap){ wrap.innerHTML=buildLoanTable(list.slice().reverse()); restoreDayGroups(); }
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
 // ── 用户管理页面 ──
 function renderUserMgmt() {
@@ -1942,7 +1930,7 @@ window.saveEditLoan=function(){
   if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
   if(st) list=list.filter(l=>l.status===st);
   const wrap=document.getElementById('loanTableWrap');
-  if(wrap){ wrap.innerHTML=buildLoanTable(list.slice().reverse()); restoreDayGroups(); }
+  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
 
 // 点击弹窗外部关闭
