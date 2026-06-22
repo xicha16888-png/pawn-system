@@ -3114,6 +3114,36 @@ function renderAppointment(){
   </div>`}`;
 }
 
+window.submitAppointment=function(){
+  const customer=document.getElementById('apptCust')?.value?.trim();
+  const phone=document.getElementById('apptPhone')?.value?.trim();
+  const arrivalDate=document.getElementById('apptDate')?.value;
+  if(!customer||!phone||!arrivalDate){
+    showMsg('apptMsg',_lang==='km'?'សូមបំពេញឈ្មោះ ទំនាក់ទំនង និងកាលបរិច្ឆេទ':_lang==='en'?'Please fill in name, contact and date':'请填写客户姓名、联系方式和到店日期','red');
+    return;
+  }
+  const appts=DB_get('appointments')||[];
+  const maxId=appts.length?Math.max(...appts.map(a=>a.id||0)):3000;
+  const appt={
+    id:maxId+1,customer,phone,
+    source:document.getElementById('apptSource')?.value||'',
+    phoneModel:document.getElementById('apptModel')?.value?.trim()||'',
+    arrivalDate,
+    arrivalTime:document.getElementById('apptTime')?.value||'',
+    store:document.getElementById('apptStore')?.value||'',
+    staffName:document.getElementById('apptStaff')?.value?.trim()||(_currentUser?.name||''),
+    note:document.getElementById('apptNote')?.value?.trim()||'',
+    status:'待到店',failReason:'',
+    createdAt:new Date().toISOString().slice(0,10),
+    createdBy:_currentUser?.username||'',
+  };
+  appts.push(appt);
+  DB_set('appointments',appts);
+  saveDB();
+  showMsg('apptMsg',_lang==='km'?'✅ បានរក្សាទុក!':_lang==='en'?'✅ Appointment saved!':'✅ 预约单已保存！','green');
+  setTimeout(()=>{window._apptTab='list';nav('appointment');},800);
+};
+
 window._pendingFailId=null;
 
 window.apptStatusChange=function(id,status){
