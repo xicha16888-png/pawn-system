@@ -3044,7 +3044,8 @@ function renderAppointment(){
           <option value="">${t('apptAllStaff')}</option>
           ${[...new Set(appts.map(a=>a.staffName||'').filter(Boolean))].map(s=>`<option value="${esc(s)}" ${(window._apptStaffFilter||'')===s?'selected':''}>${esc(s)}</option>`).join('')}
         </select>
-        ${(window._apptDateFrom||window._apptDateTo||window._apptStaffFilter)?'<button onclick="window._apptDateFrom=\'\';window._apptDateTo=\'\';window._apptStaffFilter=\'\';nav(\'appointment\')" style="font-size:11px;padding:3px 8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;cursor:pointer;font-family:inherit">'+t('apptClear')+'</button>':''}
+        ${(window._apptDateFrom||window._apptDateTo||window._apptStaffFilter)?'<button onclick="window._apptDateFrom=\'\';window._apptDateTo=\'\';window._apptStaffFilter=\'\';window._apptSearch=\'\';nav(\'appointment\')" style="font-size:11px;padding:3px 8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;cursor:pointer;font-family:inherit">'+t('apptClear')+'</button>':''}
+        <input id="apptSearch" value="${window._apptSearch||''}" oninput="window._apptSearch=this.value;nav('appointment')" placeholder="${_lang==='km'?'ស្វែងរក...':_lang==='en'?'Search name, location, staff...':'搜索姓名/地点/客服...'}" style="font-size:12px;padding:4px 10px;border:1px solid #1565c0;border-radius:6px;font-family:inherit;width:200px;outline:none">
       </div>
       <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
         ${['全部','待到店','已到店','已成交','未成交','爽约'].map((s,i)=>{
@@ -3056,10 +3057,17 @@ function renderAppointment(){
     ${(()=>{
       const filter=window._apptFilter||'全部';
       const staffFilter=window._apptStaffFilter||'';
+      const searchQ=(window._apptSearch||'').toLowerCase().trim();
       let list=filter==='全部'?appts:appts.filter(a=>a.status===filter);
       if(dateFrom) list=list.filter(a=>a.arrivalDate>=dateFrom);
       if(dateTo) list=list.filter(a=>a.arrivalDate<=dateTo);
       if(staffFilter) list=list.filter(a=>(a.staffName||'')===staffFilter);
+      if(searchQ) list=list.filter(a=>
+        (a.customer||'').toLowerCase().includes(searchQ)||
+        (a.store||'').toLowerCase().includes(searchQ)||
+        (a.staffName||'').toLowerCase().includes(searchQ)||
+        (a.phone||'').includes(searchQ)
+      );
       const sorted=list.slice().sort((a,b)=>(a.arrivalDate+a.arrivalTime)<(b.arrivalDate+b.arrivalTime)?1:-1);
       if(!sorted.length) return `<div class="empty-state"><div class="ei">📅</div><p>${t('noRecord')}</p></div>`;
       return `<div class="table-wrap"><table>
@@ -3105,36 +3113,6 @@ function renderAppointment(){
     </div>
   </div>`}`;
 }
-
-window.submitAppointment=function(){
-  const customer=document.getElementById('apptCust')?.value?.trim();
-  const phone=document.getElementById('apptPhone')?.value?.trim();
-  const arrivalDate=document.getElementById('apptDate')?.value;
-  if(!customer||!phone||!arrivalDate){
-    showMsg('apptMsg',_lang==='km'?'សូមបំពេញឈ្មោះ ទំនាក់ទំនង និងកាលបរិច្ឆេទ':_lang==='en'?'Please fill in name, contact and date':'请填写客户姓名、联系方式和到店日期','red');
-    return;
-  }
-  const appts=DB_get('appointments')||[];
-  const maxId=appts.length?Math.max(...appts.map(a=>a.id||0)):3000;
-  const appt={
-    id:maxId+1,customer,phone,
-    source:document.getElementById('apptSource')?.value||'',
-    phoneModel:document.getElementById('apptModel')?.value?.trim()||'',
-    arrivalDate,
-    arrivalTime:document.getElementById('apptTime')?.value||'',
-    store:document.getElementById('apptStore')?.value||'',
-    staffName:document.getElementById('apptStaff')?.value?.trim()||(_currentUser?.name||''),
-    note:document.getElementById('apptNote')?.value?.trim()||'',
-    status:'待到店',failReason:'',
-    createdAt:new Date().toISOString().slice(0,10),
-    createdBy:_currentUser?.username||'',
-  };
-  appts.push(appt);
-  DB_set('appointments',appts);
-  saveDB();
-  showMsg('apptMsg',_lang==='km'?'✅ បានរក្សាទុក!':_lang==='en'?'✅ Appointment saved!':'✅ 预约单已保存！','green');
-  setTimeout(()=>{window._apptTab='list';nav('appointment');},800);
-};
 
 window._pendingFailId=null;
 
