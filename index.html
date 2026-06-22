@@ -2791,19 +2791,36 @@ function renderAppointment(){
   <div class="card">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
       <div class="card-title" style="margin:0">预约单列表（${appts.length} 条）</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <label style="font-size:12px;color:var(--muted)">📅 从</label>
+        <input type="date" value="${window._apptDateFrom||''}" onchange="window._apptDateFrom=this.value;nav('appointment')" style="font-size:12px;padding:3px 8px;border:1px solid #ddd;border-radius:6px;font-family:inherit">
+        <label style="font-size:12px;color:var(--muted)">到</label>
+        <input type="date" value="${window._apptDateTo||''}" onchange="window._apptDateTo=this.value;nav('appointment')" style="font-size:12px;padding:3px 8px;border:1px solid #ddd;border-radius:6px;font-family:inherit">
+        <select onchange="window._apptStaffFilter=this.value;nav('appointment')" style="font-size:12px;padding:3px 8px;border:1px solid #ddd;border-radius:6px;font-family:inherit">
+          <option value="">👤 全部客服</option>
+          ${[...new Set(appts.map(a=>a.staffName||'').filter(Boolean))].map(s=>`<option value="${esc(s)}" ${(window._apptStaffFilter||'')===s?'selected':''}>${esc(s)}</option>`).join('')}
+        </select>
+        ${(window._apptDateFrom||window._apptDateTo||window._apptStaffFilter)?'<button onclick="window._apptDateFrom=\'\';window._apptDateTo=\'\';window._apptStaffFilter=\'\';nav(\'appointment\')" style="font-size:11px;padding:3px 8px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;cursor:pointer;font-family:inherit">✕ 清除</button>':''}
+      </div>
       <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
-        ${['全部','待到店','已到店','已成交','爽约'].map(s=>`
+        ${['全部','待到店','已到店','已成交','未成交','爽约'].map(s=>`
           <button onclick="window._apptFilter='${s}';nav('appointment')" style="padding:4px 12px;border:none;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:${(window._apptFilter||'全部')===s?'var(--navy)':'#e0e0e0'};color:${(window._apptFilter||'全部')===s?'#fff':'var(--text)'}">${s}</button>
         `).join('')}
       </div>
     </div>
     ${(()=>{
       const filter=window._apptFilter||'全部';
-      const list=filter==='全部'?appts:appts.filter(a=>a.status===filter);
+      const dateFrom=window._apptDateFrom||'';
+      const dateTo=window._apptDateTo||'';
+      const staffFilter=window._apptStaffFilter||'';
+      let list=filter==='全部'?appts:appts.filter(a=>a.status===filter);
+      if(dateFrom) list=list.filter(a=>a.arrivalDate>=dateFrom);
+      if(dateTo) list=list.filter(a=>a.arrivalDate<=dateTo);
+      if(staffFilter) list=list.filter(a=>(a.staffName||'')===staffFilter);
       const sorted=list.slice().sort((a,b)=>(a.arrivalDate+a.arrivalTime)<(b.arrivalDate+b.arrivalTime)?1:-1);
       if(!sorted.length) return `<div class="empty-state"><div class="ei">📅</div><p>暂无预约记录</p></div>`;
       return `<div class="table-wrap"><table>
-        <tr><th>#</th><th>客户</th><th>联系方式</th><th>来源</th><th>手机型号</th><th>到店时间</th><th>地点</th><th>客服</th><th>状态</th><th>操作</th></tr>
+        <tr><th>#</th><th>客户</th><th>联系方式</th><th>来源</th><th>手机型号</th><th>到店时间</th><th>地点</th><th>客服</th><th>状态</th><th>未成交原因</th><th>操作</th></tr>
         ${sorted.map(a=>`<tr>
           <td style="font-size:12px;color:var(--muted)">${a.id}</td>
           <td class="fw700">${esc(a.customer)}</td>
@@ -2814,6 +2831,7 @@ function renderAppointment(){
           <td style="font-size:12px">${esc(a.store||'—')}</td>
           <td style="font-size:12px">${esc(a.staffName||'—')}</td>
           <td><span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:${statusColor[a.status]||'#aaa'}22;color:${statusColor[a.status]||'#555'};border:1px solid ${statusColor[a.status]||'#aaa'}44">${a.status}</span></td>
+          <td style="font-size:12px;color:${a.failReason?'#e65100':'var(--muted)'};max-width:140px">${a.failReason?esc(a.failReason):'—'}</td>
           <td>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
               <select onchange="apptStatusChange(${a.id},this.value);this.value=''" style="font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid #ddd;font-family:inherit;cursor:pointer">
