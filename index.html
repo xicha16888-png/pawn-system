@@ -1809,6 +1809,8 @@ window.editLoan=function(id){
   document.getElementById('edit_customer').value = l.customer||'';
   document.getElementById('edit_customerPhone').value = l.customerPhone||'';
   document.getElementById('edit_idNumber').value = l.idNumber||l.idCard||'';
+  document.getElementById('edit_dob').value = l.customerDob||'';
+  document.getElementById('edit_age').value = l.customerAge||'';
   document.getElementById('edit_shopName').value = l.shopName||'';
   document.getElementById('edit_salesperson').value = l.salesperson||'';
   document.getElementById('edit_phoneBrand').value = l.phoneBrand||'';
@@ -1823,6 +1825,18 @@ window.editLoan=function(id){
   document.getElementById('editLoanMsg').innerHTML = '';
   document.getElementById('editLoanModal').style.display = 'block';
   document.body.style.overflow = 'hidden';
+};
+
+window.editCalcAge=function(){
+  const dob=document.getElementById('edit_dob')?.value;
+  const ageEl=document.getElementById('edit_age');
+  if(!dob||!ageEl) return;
+  const today=new Date();
+  const birth=new Date(dob);
+  let age=today.getFullYear()-birth.getFullYear();
+  const mo=today.getMonth()-birth.getMonth();
+  if(mo<0||(mo===0&&today.getDate()<birth.getDate())) age--;
+  ageEl.value=age>0?age:'';
 };
 
 window.closeEditModal=function(){
@@ -1853,6 +1867,8 @@ window.saveEditLoan=function(){
     customer,
     customerPhone: document.getElementById('edit_customerPhone').value.trim(),
     idNumber: document.getElementById('edit_idNumber').value.trim(),
+    customerDob: document.getElementById('edit_dob').value||'',
+    customerAge: +(document.getElementById('edit_age').value||0)||null,
     shopName: document.getElementById('edit_shopName').value.trim(),
     salesperson: document.getElementById('edit_salesperson').value.trim(),
     phoneBrand: document.getElementById('edit_phoneBrand').value.trim(),
@@ -3441,6 +3457,10 @@ window.saveCompany=function(){
         <input id="edit_customerPhone" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
       <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">身份证号</label>
         <input id="edit_idNumber" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">出生年月日</label>
+        <input type="date" id="edit_dob" oninput="editCalcAge()" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">年龄（自动）</label>
+        <input type="number" id="edit_age" min="18" max="99" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px;background:#f5f5f5"></div>
       <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">店铺名称</label>
         <input id="edit_shopName" style="width:100%;border:1px solid #e0e0e0;border-radius:7px;padding:8px 10px;font-size:13px"></div>
       <div><label style="font-size:11px;color:#78909c;font-weight:600;display:block;margin-bottom:4px">业务员</label>
