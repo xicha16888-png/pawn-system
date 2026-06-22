@@ -1404,10 +1404,15 @@ window.submitLoan=function(){
 // ══════════════════════════════════════════════════════
 function renderLoanList(){
   const loans=DB_get('loans')||[];
+  const months=[...new Set(loans.map(l=>l.date.slice(0,7)))].sort().reverse();
   return `
   <div class="page-header"><div class="page-title">🔍 ${t('loanListTitle')}</div></div>
   <div class="search-row">
     <input id="lSearch" placeholder="${t('searchPlaceholder')}" oninput="filterLoans()">
+    <select id="lMonthFilter" onchange="filterLoans()" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none">
+      <option value="">📅 全部月份</option>
+      ${months.map(m=>`<option value="${m}">${m}</option>`).join('')}
+    </select>
     <select id="lStatusFilter" onchange="filterLoans()" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none">
       <option value="">${t('allStatus')}</option>
       <option value="进行中">${t('active')}</option>
@@ -1421,20 +1426,43 @@ function renderLoanList(){
 window.filterLoans=function(){
   const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
   const st=document.getElementById('lStatusFilter')?.value||'';
+  const mo=document.getElementById('lMonthFilter')?.value||'';
   let list=DB_get('loans')||[];
-  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
+  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.contractNo||'').toLowerCase().includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
   if(st) list=list.filter(l=>l.status===st);
+  if(mo) list=list.filter(l=>l.date.slice(0,7)===mo);
   const wrap=document.getElementById('loanTableWrap');
   if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
 };
 function buildLoanTable(loans){
   if(!loans.length) return `<div class="empty-state"><div class="ei">📋</div><p>${t('noRecord')}</p></div>`;
   const td=today();
-  return `<div class="card"><div class="table-wrap"><table>
-    <tr><th>${t('colNo')}</th><th>${_lang==='km'?'លេខសន្យា':_lang==='en'?'Contract#':'合同编号'}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
+  // 按日期分组
+  const groups={};
+  loans.forEach(l=>{
+    const d=l.date||'未知';
+    if(!groups[d]) groups[d]=[];
+    groups[d].push(l);
+  });
+  const sortedDates=Object.keys(groups).sort().reverse();
+  const thead=`<tr><th>${t('colNo')}</th><th>${_lang==='km'?'លេខសន្យា':_lang==='en'?'Contract#':'合同编号'}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
       <th>${t('colLoanAmt')}</th><th>${_lang==='km'?'ប្រាក់/ខែ':_lang==='en'?'Monthly Pay':'月还款额'}</th>
-      <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':'锁机'}</th><th>${_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑白名单'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>
-    ${loans.map(l=>{
+      <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':'锁机'}</th><th>${_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑白名单'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>`;
+  return sortedDates.map(date=>{
+    const dayLoans=groups[date];
+    const uid='day_'+date.replace(/-/g,'');
+    const totalAmt=dayLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
+    return `<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden">
+      <div onclick="toggleDayGroup('${uid}')" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#f0f4ff;cursor:pointer;user-select:none;border-bottom:1px solid #e0e0e0">
+        <span id="${uid}_icon" style="font-size:14px;transition:.2s">▼</span>
+        <span style="font-weight:700;color:var(--navy);font-size:14px">📅 ${date}</span>
+        <span style="background:var(--navy);color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700">${dayLoans.length} 笔</span>
+        <span style="color:var(--orange);font-weight:700;font-size:13px">${fmt(totalAmt)}</span>
+      </div>
+      <div id="${uid}" style="overflow:auto">
+        <table style="width:100%;border-collapse:collapse">
+          ${thead}
+          ${loans.map(l=>{
       const paid=l.schedule.filter(p=>p.paid).length;
       const isOverdue=l.status==='进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
       const condColors={cond100:'cond-new',cond95:'cond-9',cond9:'cond-9',cond8:'cond-8',cond7:'cond-7'};
@@ -1487,7 +1515,19 @@ function buildLoanTable(loans){
       </tr>`;
     }).join('')}
   </table></div></div>`;
+}}
+        </table>
+      </div>
+    </div>`;
+  }).join('');
 }
+window.toggleDayGroup=function(uid){
+  const el=document.getElementById(uid);
+  const icon=document.getElementById(uid+'_icon');
+  if(!el) return;
+  if(el.style.display==='none'){el.style.display='';if(icon)icon.textContent='▼';}
+  else{el.style.display='none';if(icon)icon.textContent='▶';}
+};
 window.viewLoan=function(id){
   const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
   const condNames={cond100:'🆕全新',cond95:'✨99成新',cond9:'⭐9成新',cond8:'👍8成新',cond7:'👌7成以下'};
