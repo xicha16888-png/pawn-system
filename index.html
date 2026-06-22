@@ -2547,15 +2547,235 @@ function renderBadDebt(){
 }
 
 function renderFinance(){
-  const tab=window._financeTab||'normal';
+  const tab=window._financeTab||'summary';
   return `
   <div class="page-header"><div class="page-title">📈 ${t('financeTitle')}</div></div>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button onclick="window._financeTab='summary';nav('finance')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='summary'?'#0d3b6e':'#e0e0e0'};color:${tab==='summary'?'#fff':'var(--text)'}">📊 总账</button>
     <button onclick="window._financeTab='normal';nav('finance')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='normal'?'var(--green)':'#e0e0e0'};color:${tab==='normal'?'#fff':'var(--text)'}">✅ 正常利息</button>
     <button onclick="window._financeTab='reduced';nav('finance')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='reduced'?'#ff6f00':'#e0e0e0'};color:${tab==='reduced'?'#fff':'var(--text)'}">↓ 降息订单</button>
     <button onclick="window._financeTab='referral';nav('finance')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='referral'?'#7b1fa2':'#e0e0e0'};color:${tab==='referral'?'#fff':'var(--text)'}">🤝 转介绍</button>
+    <button onclick="window._financeTab='performance';nav('finance')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='performance'?'#1565c0':'#e0e0e0'};color:${tab==='performance'?'#fff':'var(--text)'}">🏆 业绩统计</button>
+    <button onclick="window._financeTab='monthly';nav('finance')" style="padding:8px 18px;border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:${tab==='monthly'?'#2e7d32':'#e0e0e0'};color:${tab==='monthly'?'#fff':'var(--text)'}">📅 月度对账</button>
   </div>
-  ${tab==='normal'?renderFinanceNormal():tab==='reduced'?renderFinanceReduced():renderFinanceReferral()}`;
+  ${tab==='summary'?renderFinanceSummary():tab==='normal'?renderFinanceNormal():tab==='reduced'?renderFinanceReduced():tab==='referral'?renderFinanceReferral():tab==='performance'?renderFinancePerformance():renderFinanceMonthly()}`;
+}
+
+function renderFinanceSummary(){
+  const loans=DB_get('loans')||[];
+  const pays=DB_get('payments')||[];
+  const expenses=DB_get('expenses')||[];
+  const td=today(); const m=td.slice(0,7);
+
+  // 基础数据
+  const activeLoans=loans.filter(l=>l.status==='进行中');
+  const totalInLoan=activeLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
+  const totalDisbursed=loans.reduce((a,l)=>a+(+l.loanAmount||0),0);
+  const totalInterestCollected=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
+
+  // 本月应收利息 = 所有进行中合同月利息总和
+  const monthlyReceivable=activeLoans.reduce((a,l)=>a+(+l.monthlyInterest||0),0);
+
+  // 本月日常开支
+  const monthlyExp=expenses.filter(e=>e.date.slice(0,7)===m).reduce((a,e)=>a+(+e.amount||0),0);
+
+  // 本月毛利润
+  const monthlyProfit=monthlyReceivable-monthlyExp;
+
+  // 坏账率3档
+  function getOverdueDays(l){
+    let max=0;
+    (l.schedule||[]).forEach(p=>{if(!p.paid&&p.dueDate<td){const d=daysDiff(p.dueDate,td);if(d>max)max=d;}});
+    return max;
+  }
+  const watch=activeLoans.filter(l=>{const d=getOverdueDays(l);return d>=1&&d<=30;});
+  const subStd=activeLoans.filter(l=>{const d=getOverdueDays(l);return d>=31&&d<=60;});
+  const doubtful=activeLoans.filter(l=>{const d=getOverdueDays(l);return d>=61&&d<=90;});
+  const loss=activeLoans.filter(l=>getOverdueDays(l)>90);
+
+  const watchAmt=watch.reduce((a,l)=>a+(+l.loanAmount||0),0);
+  const subStdAmt=subStd.reduce((a,l)=>a+(+l.loanAmount||0),0);
+  const doubtfulAmt=doubtful.reduce((a,l)=>a+(+l.loanAmount||0),0);
+  const lossAmt=loss.reduce((a,l)=>a+(+l.loanAmount||0),0);
+
+  const watchRate=totalInLoan>0?((watchAmt/totalInLoan)*100).toFixed(1):0;
+  const subStdRate=totalInLoan>0?((subStdAmt/totalInLoan)*100).toFixed(1):0;
+  const lossRate=totalInLoan>0?((lossAmt/totalInLoan)*100).toFixed(1):0;
+
+  // 全部合同统计
+  const normalCount=loans.filter(l=>!l.interestType||l.interestType==='normal').length;
+  const reducedCount=loans.filter(l=>l.interestType==='reduced').length;
+  const referralCount=loans.filter(l=>l.interestType==='referral').length;
+
+  return `
+  <div class="card" style="background:linear-gradient(135deg,#0d3b6e,#1565c0);color:#fff;margin-bottom:14px">
+    <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:14px;font-weight:700">📊 总账概览 — 全部合同（正常+降息+转介绍）</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:center">
+      <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">在贷总额</div>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${fmt(totalInLoan)}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5)">${activeLoans.length} 笔进行中</div>
+      </div>
+      <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">累计放款</div>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${fmt(totalDisbursed)}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5)">${loans.length} 笔历史合同</div>
+      </div>
+      <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">累计收息</div>
+        <div style="font-size:22px;font-weight:700;margin:4px 0">${fmt(totalInterestCollected)}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5)">历史全部</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-grid" style="margin-bottom:14px">
+    <div class="stat-card green"><span class="stat-icon">💰</span><div class="stat-label">本月应收利息</div><div class="stat-value">${fmt(monthlyReceivable)}</div><div class="stat-sub">进行中合同月息合计</div></div>
+    <div class="stat-card red"><span class="stat-icon">🧾</span><div class="stat-label">本月日常开支</div><div class="stat-value">${fmt(monthlyExp)}</div></div>
+    <div class="stat-card ${monthlyProfit>=0?'green':'red'}"><span class="stat-icon">📈</span><div class="stat-label">本月毛利润</div><div class="stat-value" style="color:${monthlyProfit>=0?'var(--green)':'var(--red)'}">${fmt(monthlyProfit)}</div><div class="stat-sub">应收利息 − 开支</div></div>
+    <div class="stat-card blue"><span class="stat-icon">📋</span><div class="stat-label">合同结构</div><div class="stat-value" style="font-size:14px">${normalCount}/${reducedCount}/${referralCount}</div><div class="stat-sub">正常/降息/转介绍</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">⚠️ 风险分析（基于在贷总额 ${fmt(totalInLoan)}）</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+      <div style="background:#fff8e1;border-radius:10px;padding:12px;text-align:center;border-left:3px solid #f9a825">
+        <div style="font-size:11px;color:#f9a825;font-weight:700">🟡 关注（1-30天）</div>
+        <div style="font-size:20px;font-weight:700;color:#f9a825;margin:6px 0">${watch.length}笔</div>
+        <div style="font-size:13px;font-weight:700">${fmt(watchAmt)}</div>
+        <div style="font-size:11px;color:var(--muted)">占比 ${watchRate}%</div>
+      </div>
+      <div style="background:#fff3e0;border-radius:10px;padding:12px;text-align:center;border-left:3px solid #ef6c00">
+        <div style="font-size:11px;color:#ef6c00;font-weight:700">🟠 次级（31-60天）</div>
+        <div style="font-size:20px;font-weight:700;color:#ef6c00;margin:6px 0">${subStd.length}笔</div>
+        <div style="font-size:13px;font-weight:700">${fmt(subStdAmt)}</div>
+        <div style="font-size:11px;color:var(--muted)">占比 ${subStdRate}%</div>
+      </div>
+      <div style="background:#ffebee;border-radius:10px;padding:12px;text-align:center;border-left:3px solid #c62828">
+        <div style="font-size:11px;color:#c62828;font-weight:700">🔴 可疑（61-90天）</div>
+        <div style="font-size:20px;font-weight:700;color:#c62828;margin:6px 0">${doubtful.length}笔</div>
+        <div style="font-size:13px;font-weight:700">${fmt(doubtfulAmt)}</div>
+        <div style="font-size:11px;color:var(--muted)">占比 ${totalInLoan>0?((doubtfulAmt/totalInLoan)*100).toFixed(1):0}%</div>
+      </div>
+      <div style="background:#f3e5f5;border-radius:10px;padding:12px;text-align:center;border-left:3px solid #7b1fa2">
+        <div style="font-size:11px;color:#7b1fa2;font-weight:700">🟣 坏账（90天+）</div>
+        <div style="font-size:20px;font-weight:700;color:#7b1fa2;margin:6px 0">${loss.length}笔</div>
+        <div style="font-size:13px;font-weight:700">${fmt(lossAmt)}</div>
+        <div style="font-size:11px;color:var(--muted)">坏账率 ${lossRate}%</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderFinancePerformance(){
+  const loans=DB_get('loans')||[];
+  const pays=DB_get('payments')||[];
+  const td=today(); const m=td.slice(0,7);
+
+  // 按录单客服统计
+  const staffMap={};
+  loans.forEach(l=>{
+    const key=l.createdByName||l.createdBy||'未知';
+    if(!staffMap[key]) staffMap[key]={name:key,total:0,amt:0,active:0,activeAmt:0,interest:0,mAmt:0,mCount:0};
+    staffMap[key].total++;
+    staffMap[key].amt+=(+l.loanAmount||0);
+    if(l.status==='进行中'){staffMap[key].active++;staffMap[key].activeAmt+=(+l.loanAmount||0);}
+    if(l.date.slice(0,7)===m){staffMap[key].mCount++;staffMap[key].mAmt+=(+l.loanAmount||0);}
+  });
+  // 收息统计
+  pays.forEach(p=>{
+    const loan=loans.find(l=>l.id===p.loanId);
+    if(!loan) return;
+    const key=loan.createdByName||loan.createdBy||'未知';
+    if(staffMap[key]) staffMap[key].interest+=(+p.paidInterest||0);
+  });
+
+  const ranking=Object.values(staffMap).sort((a,b)=>b.amt-a.amt);
+
+  return `
+  <div class="stats-grid" style="margin-bottom:14px">
+    <div class="stat-card blue"><span class="stat-icon">👤</span><div class="stat-label">客服人数</div><div class="stat-value">${ranking.length}</div></div>
+    <div class="stat-card green"><span class="stat-icon">📋</span><div class="stat-label">本月新增</div><div class="stat-value">${loans.filter(l=>l.date.slice(0,7)===m).length}</div><div class="stat-sub">${fmt(loans.filter(l=>l.date.slice(0,7)===m).reduce((a,l)=>a+(+l.loanAmount||0),0))}</div></div>
+    <div class="stat-card amber"><span class="stat-icon">💰</span><div class="stat-label">累计放款</div><div class="stat-value">${fmt(loans.reduce((a,l)=>a+(+l.loanAmount||0),0))}</div></div>
+    <div class="stat-card green"><span class="stat-icon">💵</span><div class="stat-label">累计收息</div><div class="stat-value">${fmt(pays.reduce((a,p)=>a+(+p.paidInterest||0),0))}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">🏆 客服业绩排行榜</div>
+    ${ranking.length?`<div class="table-wrap"><table>
+      <tr><th>排名</th><th>客服姓名</th><th>总合同数</th><th>本月新增</th><th>总放款额</th><th>在贷笔数</th><th>在贷金额</th><th>累计收息</th></tr>
+      ${ranking.map((s,i)=>`<tr>
+        <td><span style="background:${i===0?'#ffd700':i===1?'#c0c0c0':i===2?'#cd7f32':'#e0e0e0'};color:${i<3?'#333':'#555'};border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${i+1}</span></td>
+        <td class="fw700">${esc(s.name)}</td>
+        <td class="fw700 text-blue">${s.total}</td>
+        <td class="fw700 text-green">${s.mCount} <span style="font-size:11px;color:var(--muted)">${fmt(s.mAmt)}</span></td>
+        <td class="fw700 text-amber">${fmt(s.amt)}</td>
+        <td>${s.active}</td>
+        <td>${fmt(s.activeAmt)}</td>
+        <td class="fw700 text-green">${fmt(s.interest)}</td>
+      </tr>`).join('')}
+    </table></div>`:`<div class="empty-state"><div class="ei">👤</div><p>暂无数据</p></div>`}
+  </div>`;
+}
+
+function renderFinanceMonthly(){
+  const loans=DB_get('loans')||[];
+  const pays=DB_get('payments')||[];
+  const expenses=DB_get('expenses')||[];
+
+  // 获取所有月份
+  const allMonths=new Set([
+    ...pays.map(p=>p.date.slice(0,7)),
+    ...expenses.map(e=>e.date.slice(0,7)),
+    ...loans.map(l=>l.date.slice(0,7))
+  ]);
+  const months=[...allMonths].sort().reverse();
+
+  // 每月应收利息 = 该月进行中合同的月利息合计
+  // 用贷款日期来判断该月有哪些合同在进行中（简化：用所有active合同计算当月应收）
+  const activeLoans=loans.filter(l=>l.status==='进行中');
+  const currentMonthlyReceivable=activeLoans.reduce((a,l)=>a+(+l.monthlyInterest||0),0);
+
+  const rows=months.map(m=>{
+    const mPays=pays.filter(p=>p.date.slice(0,7)===m);
+    const actualInterest=mPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
+    const mExp=expenses.filter(e=>e.date.slice(0,7)===m).reduce((a,e)=>a+(+e.amount||0),0);
+    const mLoans=loans.filter(l=>l.date.slice(0,7)===m);
+    const mDisbursed=mLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
+    // 应收利息用实收代替（历史月份无法精确重算）
+    const profit=actualInterest-mExp;
+    return {m,actualInterest,mExp,profit,mDisbursed,mCount:mLoans.length};
+  });
+
+  const totalProfit=rows.reduce((a,r)=>a+r.profit,0);
+
+  return `
+  <div class="stats-grid" style="margin-bottom:14px">
+    <div class="stat-card green"><span class="stat-icon">💰</span><div class="stat-label">当月应收利息</div><div class="stat-value">${fmt(currentMonthlyReceivable)}</div><div class="stat-sub">进行中合同月息合计</div></div>
+    <div class="stat-card blue"><span class="stat-icon">📊</span><div class="stat-label">累计实收利息</div><div class="stat-value">${fmt(pays.reduce((a,p)=>a+(+p.paidInterest||0),0))}</div></div>
+    <div class="stat-card red"><span class="stat-icon">🧾</span><div class="stat-label">累计开支</div><div class="stat-value">${fmt(expenses.reduce((a,e)=>a+(+e.amount||0),0))}</div></div>
+    <div class="stat-card ${totalProfit>=0?'green':'red'}"><span class="stat-icon">📈</span><div class="stat-label">累计毛利润</div><div class="stat-value" style="color:${totalProfit>=0?'var(--green)':'var(--red)'}">${fmt(totalProfit)}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">📅 月度对账单</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">※ 历史月份利润以实收利息计算；当月应收利息见上方统计卡</div>
+    ${rows.length?`<div class="table-wrap"><table>
+      <tr><th>月份</th><th>新增合同</th><th>当月放款</th><th>实收利息</th><th>日常开支</th><th>毛利润</th></tr>
+      ${rows.map(r=>`<tr>
+        <td class="fw700">${r.m}</td>
+        <td>${r.mCount} 笔</td>
+        <td class="text-amber fw700">${fmt(r.mDisbursed)}</td>
+        <td class="text-green fw700">${fmt(r.actualInterest)}</td>
+        <td class="text-red">${fmt(r.mExp)}</td>
+        <td class="fw700" style="color:${r.profit>=0?'var(--green)':'var(--red)'}">${fmt(r.profit)}</td>
+      </tr>`).join('')}
+      <tr style="background:#f5f5f5;font-weight:700">
+        <td colspan="3">合计</td>
+        <td class="text-green fw700">${fmt(rows.reduce((a,r)=>a+r.actualInterest,0))}</td>
+        <td class="text-red fw700">${fmt(rows.reduce((a,r)=>a+r.mExp,0))}</td>
+        <td class="fw700" style="color:${totalProfit>=0?'var(--green)':'var(--red)'}">${fmt(totalProfit)}</td>
+      </tr>
+    </table></div>`:`<div class="empty-state"><div class="ei">📅</div><p>暂无数据</p></div>`}
+  </div>`;
 }
 
 function renderFinanceNormal(){
