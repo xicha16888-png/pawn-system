@@ -3249,6 +3249,7 @@ function renderAppointment(){
                 <option value="爽约">${t('apptNoShow')}</option>
               </select>
               ${a.status==='已到店'?`<button class="btn btn-success btn-sm" onclick="apptToLoan(${a.id})">${t('apptTransfer')}</button>`:''}
+              <button class="btn btn-primary btn-sm" onclick="editAppointment(${a.id})">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>
               ${isAdmin()||isManager()?`<button class="btn btn-danger btn-sm" onclick="deleteAppointment(${a.id})">${t('apptDelete')}</button>`:''}
             </div>
           </td>
@@ -3297,6 +3298,80 @@ window.submitAppointment=async function(){
   saveRecord('appointments',appt);
   showMsg('apptMsg',_lang==='km'?'✅ បានរក្សាទុក!':_lang==='en'?'✅ Appointment saved!':'✅ 预约单已保存！','green');
   setTimeout(()=>{window._apptTab='list';nav('appointment');},800);
+};
+
+// 编辑预约单
+window.editAppointment=function(id){
+  const appts=DB_get('appointments')||[];
+  const a=appts.find(x=>x.id===id);
+  if(!a) return;
+  const stores=DB_get('stores')||[];
+  const storeOpts=stores.length?stores.map(s=>`<option value="${esc(s.name||s)}" ${a.store===(s.name||s)?'selected':''}>${esc(s.name||s)}</option>`).join(''):`<option value="MORODOK总店" ${a.store==='MORODOK总店'?'selected':''}>MORODOK总店</option><option value="A1" ${a.store==='A1'?'selected':''}>A1</option><option value="A2" ${a.store==='A2'?'selected':''}>A2</option>`;
+  const sources=['Facebook','TikTok','Instagram','转介绍','自然到店','其他'];
+  const modal=document.createElement('div');
+  modal.id='editApptModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`
+  <div style="background:#fff;border-radius:14px;padding:24px;max-width:560px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:16px;font-weight:700;color:var(--navy)">✏️ 编辑预约单 #${a.id}</div>
+      <button onclick="document.getElementById('editApptModal').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>客户姓名 *</label><input id="ea_cust" value="${esc(a.customer||'')}" placeholder="客户全名"></div>
+      <div class="form-group"><label>联系方式 *</label><input id="ea_phone" value="${esc(a.phone||'')}" placeholder="电话号码"></div>
+      <div class="form-group"><label>来源</label>
+        <select id="ea_source">${sources.map(s=>`<option value="${s}" ${a.source===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>手机型号</label>
+        <select id="ea_model" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
+          <option value="">— 选择型号 —</option>
+          ${['12','12Pro','12ProMax','13','13Pro','13ProMax','14','14Plus','14Pro','14ProMax','15','15Plus','15Pro','15ProMax','16','16Plus','16Pro','16ProMax','17','17 Air','17 Pro','17 Pro Max'].map(m=>`<option value="iPhone ${m}" ${a.phoneModel==='iPhone '+m?'selected':''}>iPhone ${m}</option>`).join('')}
+          <option value="其他" ${a.phoneModel==='其他'?'selected':''}>其他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>到店日期 *</label><input type="date" id="ea_date" value="${a.arrivalDate||''}"></div>
+      <div class="form-group"><label>到店时间</label><input type="time" id="ea_time" value="${a.arrivalTime||''}"></div>
+      <div class="form-group"><label>服务地点</label><select id="ea_store">${storeOpts}</select></div>
+      <div class="form-group"><label>预约客服</label><input id="ea_staff" value="${esc(a.staffName||'')}" placeholder="客服姓名"></div>
+      <div class="form-group span2"><label>备注</label><input id="ea_note" value="${esc(a.note||'')}" placeholder="备注"></div>
+    </div>
+    <div id="ea_msg" style="margin:10px 0;font-size:13px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+      <button onclick="document.getElementById('editApptModal').remove()" class="btn btn-outline">取消</button>
+      <button onclick="saveEditAppointment(${a.id})" class="btn btn-success">💾 保存修改</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+};
+
+window.saveEditAppointment=function(id){
+  const customer=document.getElementById('ea_cust')?.value?.trim();
+  const phone=document.getElementById('ea_phone')?.value?.trim();
+  const arrivalDate=document.getElementById('ea_date')?.value;
+  const msg=document.getElementById('ea_msg');
+  if(!customer||!phone||!arrivalDate){
+    if(msg){msg.style.color='var(--red)';msg.textContent='请填写客户姓名、联系方式和到店日期';}
+    return;
+  }
+  const appts=DB_get('appointments')||[];
+  const idx=appts.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  appts[idx]={
+    ...appts[idx],
+    customer,phone,
+    source:document.getElementById('ea_source')?.value||appts[idx].source,
+    phoneModel:document.getElementById('ea_model')?.value||appts[idx].phoneModel||'',
+    arrivalDate,
+    arrivalTime:document.getElementById('ea_time')?.value||appts[idx].arrivalTime||'',
+    store:document.getElementById('ea_store')?.value||appts[idx].store||'',
+    staffName:document.getElementById('ea_staff')?.value?.trim()||appts[idx].staffName||'',
+    note:document.getElementById('ea_note')?.value?.trim()||'',
+  };
+  DB_set('appointments',appts);
+  saveRecord('appointments',appts[idx]);
+  document.getElementById('editApptModal')?.remove();
+  nav('appointment');
 };
 
 window._pendingFailId=null;
