@@ -320,3 +320,31 @@ app.listen(PORT, () => {
   console.log(`  访问地址: http://localhost:${PORT}`);
   console.log(`${'═'.repeat(50)}\n`);
 });
+
+// ══════════════════════════════════════════
+// 获取唯一ID（原子操作，防并发重复）
+// ══════════════════════════════════════════
+app.post('/api/next-id', async (req, res) => {
+  try {
+    const { table } = req.body || {};
+    // 从对应表取最大id，加1返回
+    const tableMap = {
+      loans: 'loans',
+      payments: 'payments', 
+      extensions: 'extensions',
+      expenses: 'expenses',
+      appointments: 'appointments'
+    };
+    const t = tableMap[table] || 'loans';
+    const { data, error } = await supabase
+      .from(t)
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1);
+    if (error) throw new Error(error.message);
+    const maxId = data && data.length > 0 ? data[0].id : (t === 'appointments' ? 3000 : 1000);
+    res.json({ ok: true, id: maxId + 1 });
+  } catch(e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
