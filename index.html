@@ -274,7 +274,7 @@ const I18N = {
     // list
     loanListTitle:t('loanList'), searchPlaceholder:'搜索客户/合同号/型号/IMEI...',
     newLoanBtn:'➕ 新建抵押', allStatus:'全部状态',
-    active:_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中', settled:_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清', extended:'已续期',
+    active:'进行中', settled:'已结清', extended:'已续期',
     colNo:'#', colDate:'日期', colCustomer:t('referralCustomer'), colPhone:_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'电话',
     colModel:'型号', colImei:'IMEI', colLoanAmt:_lang==='km'?'ចំនួន':_lang==='en'?'Amount':'贷款额', colPeriods:'期数',
     colRate:_lang==='km'?'អត្រា/ខែ':_lang==='en'?'Monthly Rate':'月利率', colMonthly:'每月利息', colProgress:'进度', colStatus:'状态', colAction:'操作',
@@ -641,7 +641,7 @@ window.downloadBackup = async function() {
       l.phoneBrand||'', l.phoneModel||'', l.phoneImei||'',
       l.loanAmount||0, l.actualAmount||0, l.monthlyInterest||0,
       l.firstDue||'', l.status||'',
-      l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁', l.blacklist?_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑名单':_lang==='km'?'បញ្ជីស':_lang==='en'?'Whitelist':'白名单', l.createdBy||''
+      l.lockStatus||'未锁', l.blacklist?_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑名单':_lang==='km'?'បញ្ជីស':_lang==='en'?'Whitelist':'白名单', l.createdBy||''
     ]);
     function toCSV(headers, rows) {
       const esc = v => { const s=String(v??'').replace(/"/g,'""'); return (s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s}"`:s; };
@@ -1035,7 +1035,7 @@ function renderHome(){
   const loans=DB_get('loans')||[];
   const pays=DB_get('payments')||[];
   const td=today();
-  const active=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const active=loans.filter(l=>l.status==='进行中');
   const overdue=loans.filter(l=>l.schedule.some(p=>!p.paid&&p.dueDate<td));
   const totalInterest=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const totalPrincipal=pays.reduce((a,p)=>a+(+p.paidPrincipal||0),0);
@@ -1375,7 +1375,7 @@ window.submitLoan=async function(){
 
   // ── 同名客户检查：进行中的合同不能有相同名字 ──
   const existLoan=(DB_get('loans')||[]).find(l=>
-    l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中' &&
+    l.status==='进行中' &&
     (l.customer||'').trim().toLowerCase()===cust.toLowerCase()
   );
   if(existLoan){
@@ -1433,7 +1433,7 @@ window.submitLoan=async function(){
     phoneCondition:cond,
     phoneImei:document.getElementById('lImei')?.value?.trim()||'',
     phoneNote:document.getElementById('lPhoneNote')?.value?.trim()||'',
-    lockStatus:_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁',
+    lockStatus:'未锁',
     emgContact1:{name:document.getElementById('lEmg1Name')?.value?.trim()||'',phone:document.getElementById('lEmg1Phone')?.value?.trim()||'',relation:document.getElementById('lEmg1Rel')?.value?.trim()||''},
     emgContact2:{name:document.getElementById('lEmg2Name')?.value?.trim()||'',phone:document.getElementById('lEmg2Phone')?.value?.trim()||'',relation:document.getElementById('lEmg2Rel')?.value?.trim()||''},
     emgContact3:{name:document.getElementById('lEmg3Name')?.value?.trim()||'',phone:document.getElementById('lEmg3Phone')?.value?.trim()||'',relation:document.getElementById('lEmg3Rel')?.value?.trim()||''},
@@ -1447,7 +1447,7 @@ window.submitLoan=async function(){
     reducedRate:document.getElementById('lInterestType')?.value==='reduced'?(+(document.getElementById('lReducedRate')?.value||0)):null,
     referralType:document.getElementById('lInterestType')?.value==='referral'?(document.getElementById('lReferralType')?.value||''):null,
     referralName:document.getElementById('lInterestType')?.value==='referral'?(document.getElementById('lReferralName')?.value?.trim()||''):null,
-    schedule,status:_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中',extensions:[]
+    schedule,status:'进行中',extensions:[]
   };
   const loans=DB_get('loans')||[];
   loans.push(loan); DB_set('loans',loans);
@@ -1581,7 +1581,7 @@ function buildLoanTable(loans){
           ${thead}
           ${dayLoans.map(l=>{
       const paid=l.schedule.filter(p=>p.paid).length;
-      const isOverdue=l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
+      const isOverdue=l.status==='进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
       const condColors={cond100:'cond-new',cond95:'cond-9',cond9:'cond-9',cond8:'cond-8',cond7:'cond-7'};
       return `<tr>
         <td><a href="#" onclick="viewLoan(${l.id});return false" class="text-blue fw700">#${l.id}</a></td>
@@ -1607,9 +1607,9 @@ function buildLoanTable(loans){
         </td>
         <td>
           ${(_currentUser&&_currentUser.role==='readonly')
-            ? `<span style="font-size:12px;color:${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'#c62828':'#2e7d32'};font-weight:600">${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'🔒 锁机':'🔓 未锁'}</span>`
-            : `<button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
-            ${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
+            ? `<span style="font-size:12px;color:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};font-weight:600">${(l.lockStatus||'未锁')==='锁机'?'🔒 锁机':'🔓 未锁'}</span>`
+            : `<button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
+            ${(l.lockStatus||'未锁')==='锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
           </button>`}
         </td>
         <td>
@@ -1797,8 +1797,8 @@ window.deleteDoc=async function(loanId, docKey){
 window.toggleLockStatus=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
-  const cur=loans[li].lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁';
-  loans[li].lockStatus=cur===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁':_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机';
+  const cur=loans[li].lockStatus||'未锁';
+  loans[li].lockStatus=cur==='锁机'?'未锁':'锁机';
   DB_set('loans',loans);
   saveRecord('loans',loans[li]);
   filterLoans();
@@ -2065,7 +2065,7 @@ function renderPaymentAdd(){
     return `<div class="page-header"><div class="page-title">💰 ${t('paymentTitle')}</div></div>
     <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作还款</p></div></div>`;
   }
-  const loans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
   const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('');
   const pays=(DB_get('payments')||[]).slice().reverse();
   return `
@@ -2104,7 +2104,7 @@ function renderPaymentAdd(){
 }
 window.filterPawnLoans=function(){
   const kw=(document.getElementById('pLoanSearch')?.value||'').trim().toLowerCase();
-  const loans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
   const sel=document.getElementById('pLoan');
   const hint=document.getElementById('pLoanHint');
   const countEl=document.getElementById('pLoanSearchCount');
@@ -2182,7 +2182,7 @@ window.submitPayment=async function(){
   const pi=l.schedule.findIndex(p=>p.period===periodNo); if(pi<0) return;
   if(l.schedule[pi].paid){showMsg('payMsg',t('msgPeriodPaid'),'amber');return;}
   l.schedule[pi]={...l.schedule[pi],paid:true,paidDate:pDate,paidPrincipal:principal,paidInterest:interest,penalty};
-  if(l.schedule.every(p=>p.paid)) l.status=_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清';
+  if(l.schedule.every(p=>p.paid)) l.status='已结清';
   loans[li]=l; DB_set('loans',loans);
   const pays=DB_get('payments')||[];
   const payId=await getNextId('payments');
@@ -2236,7 +2236,7 @@ window.deletePayment=function(id){
     const pi=loans[li].schedule.findIndex(p=>p.period===pay.period);
     if(pi>=0){
       loans[li].schedule[pi]={...loans[li].schedule[pi],paid:false,paidDate:null,paidPrincipal:0,paidInterest:0,penalty:0};
-      if(loans[li].status===_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清') loans[li].status=_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中';
+      if(loans[li].status==='已结清') loans[li].status='进行中';
       DB_set('loans',loans);
     }
   }
@@ -2254,7 +2254,7 @@ function renderExtension(){
     <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作续期</p></div></div>`;
   }
   const minPaid={2:1,3:1,4:2,5:3,6:3};
-  const allLoans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const allLoans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
 
   // 生成选项时显示当前已还期数和是否满足条件
   const opts=allLoans.map(l=>{
@@ -2337,7 +2337,7 @@ function renderExtension(){
 window.filterExtLoan=function(){
   const q=(document.getElementById('extSearch')?.value||'').toLowerCase();
   const minPaid={2:1,3:1,4:2,5:3,6:3};
-  const allLoans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const allLoans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
   const filtered=q?allLoans.filter(l=>
     (l.customer||'').toLowerCase().includes(q)||
     String(l.id).includes(q)||
@@ -2446,7 +2446,7 @@ window.submitExtension=async function(){
 
   // ── 限制2：同名客户不能同时在进行中 ──
   const custName=(l.customer||'').trim().toLowerCase();
-  const dupLoan=loans.find(x=>x.id!==id && x.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中' && (x.customer||'').trim().toLowerCase()===custName);
+  const dupLoan=loans.find(x=>x.id!==id && x.status==='进行中' && (x.customer||'').trim().toLowerCase()===custName);
   if(dupLoan){
     showMsg('extMsg',`❌ 客户 "${l.customer}" 已有进行中的合同 #${dupLoan.id}，不能同时续期！`,'red');
     return;
@@ -2475,7 +2475,7 @@ window.submitExtension=async function(){
     startDate=new Date(startDate); startDate.setMonth(startDate.getMonth()+1);
   }
   l.periods+=extPeriods;
-  l.status=_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中';
+  l.status='进行中';
   if(!l.extensions) l.extensions=[];
   l.extensions.push({date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   loans[li]=l; DB_set('loans',loans);
@@ -2507,7 +2507,7 @@ function renderStats(){
   const tInt=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const tP=pays.reduce((a,p)=>a+(+p.paidPrincipal||0),0);
   const tPen=pays.reduce((a,p)=>a+(+p.penalty||0),0);
-  const active=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const active=loans.filter(l=>l.status==='进行中');
   const pendingP=active.reduce((a,l)=>a+(+l.loanAmount-l.schedule.filter(p=>p.paid).reduce((b,p)=>b+(+p.paidPrincipal||0),0)),0);
   const byMonth={};
   pays.forEach(p=>{const m=p.date.slice(0,7);if(!byMonth[m])byMonth[m]={int:0,principal:0,penalty:0,count:0};
@@ -2573,7 +2573,7 @@ function renderBadDebt(){
   }
 
   // 所有逾期贷款
-  const overdueLoans=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中'&&getOverdueDays(l)>0);
+  const overdueLoans=loans.filter(l=>l.status==='进行中'&&getOverdueDays(l)>0);
   const total=overdueLoans.length;
   const totalAmt=overdueLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
 
@@ -2703,7 +2703,7 @@ function renderBadDebt(){
   <div class="stats-grid">
     <div class="stat-card red"><span class="stat-icon">⚠️</span><div class="stat-label">逾期总笔数</div><div class="stat-value">${total}</div><div class="stat-sub">进行中贷款</div></div>
     <div class="stat-card red"><span class="stat-icon">💸</span><div class="stat-label">逾期总金额</div><div class="stat-value">${fmt(totalAmt)}</div></div>
-    <div class="stat-card amber"><span class="stat-icon">📊</span><div class="stat-label">逾期率</div><div class="stat-value">${loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').length>0?((total/loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').length)*100).toFixed(1):0}%</div><div class="stat-sub">占进行中贷款</div></div>
+    <div class="stat-card amber"><span class="stat-icon">📊</span><div class="stat-label">逾期率</div><div class="stat-value">${loans.filter(l=>l.status==='进行中').length>0?((total/loans.filter(l=>l.status==='进行中').length)*100).toFixed(1):0}%</div><div class="stat-sub">占进行中贷款</div></div>
     <div class="stat-card purple"><span class="stat-icon">🚨</span><div class="stat-label">坏账金额</div><div class="stat-value">${fmt(levelAmt['坏账'])}</div><div class="stat-sub">逾期90天以上</div></div>
   </div>
 
@@ -2753,7 +2753,7 @@ function renderFinanceSummary(){
   const td=today(); const m=td.slice(0,7);
 
   // 基础数据
-  const activeLoans=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const activeLoans=loans.filter(l=>l.status==='进行中');
   const totalInLoan=activeLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
   const totalDisbursed=loans.reduce((a,l)=>a+(+l.loanAmount||0),0);
   const totalInterestCollected=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
@@ -2864,7 +2864,7 @@ function renderFinancePerformance(){
     if(!staffMap[key]) staffMap[key]={name:key,total:0,amt:0,active:0,activeAmt:0,interest:0,mAmt:0,mCount:0};
     staffMap[key].total++;
     staffMap[key].amt+=(+l.loanAmount||0);
-    if(l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中'){staffMap[key].active++;staffMap[key].activeAmt+=(+l.loanAmount||0);}
+    if(l.status==='进行中'){staffMap[key].active++;staffMap[key].activeAmt+=(+l.loanAmount||0);}
     if(l.date.slice(0,7)===m){staffMap[key].mCount++;staffMap[key].mAmt+=(+l.loanAmount||0);}
   });
   // 收息统计
@@ -2917,7 +2917,7 @@ function renderFinanceMonthly(){
 
   // 每月应收利息 = 该月进行中合同的月利息合计
   // 用贷款日期来判断该月有哪些合同在进行中（简化：用所有active合同计算当月应收）
-  const activeLoans=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const activeLoans=loans.filter(l=>l.status==='进行中');
   const currentMonthlyReceivable=activeLoans.reduce((a,l)=>a+(+l.monthlyInterest||0),0);
 
   const rows=months.map(m=>{
@@ -2979,7 +2979,7 @@ function renderFinanceNormal(){
   const mProfit=mInt+mPen-mExp;
   const tInt=allPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const tExp=expenses.reduce((a,e)=>a+(+e.amount),0);
-  const active=normalLoans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const active=normalLoans.filter(l=>l.status==='进行中');
   return `
   <div class="stats-grid">
     <div class="stat-card blue"><span class="stat-icon">📋</span><div class="stat-label">本月新增</div><div class="stat-value">${mLoans.length}</div><div class="stat-sub">${fmt(mLoans.reduce((a,l)=>a+(+l.loanAmount),0))}</div></div>
@@ -3026,7 +3026,7 @@ function renderFinanceReduced(){
   const mPays=allPays.filter(p=>p.date.slice(0,7)===m);
   const mInt=mPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const tInt=allPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
-  const active=reducedLoans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
+  const active=reducedLoans.filter(l=>l.status==='进行中');
   // 统计少收利息（对比11.5%标准）
   const lostInterest=reducedLoans.reduce((a,l)=>{
     const stdMonthly=l.loanAmount*0.115;
@@ -3364,7 +3364,7 @@ function renderOverdue(){
   const loans=DB_get('loans')||[];
   const td=today();
   const items=[];
-  loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').forEach(l=>{
+  loans.filter(l=>l.status==='进行中').forEach(l=>{
     l.schedule.filter(p=>!p.paid&&p.dueDate<td).forEach(p=>{
       items.push({l,p,days:daysDiff(p.dueDate,td)});
     });
@@ -3396,7 +3396,7 @@ function renderTomorrow(){
   const tom=new Date(td); tom.setDate(tom.getDate()+1);
   const tomorrow=tom.toISOString().slice(0,10);
   const items=[];
-  loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').forEach(l=>{
+  loans.filter(l=>l.status==='进行中').forEach(l=>{
     l.schedule.filter(p=>!p.paid&&p.dueDate===tomorrow).forEach(p=>items.push({l,p}));
   });
   return `
