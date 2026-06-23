@@ -5,7 +5,6 @@ const path = require('path');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -20,131 +19,241 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim();
 const SUPABASE_KEY = (process.env.SUPABASE_KEY || '').trim();
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function getInitData() {
-  return {
-    loans: [], payments: [], extensions: [], expenses: [], stores: [],
-    company: { name: 'PAWN SYSTEM', address: '', phone: '', note: '' },
-    nextId: 1001,
-    users: [{ id:1, username:'admin', password:'admin123', role:'admin', name:'管理员', createdAt:'' }]
-  };
-}
+const DEFAULT_ADMIN = { id:1, username:'admin', password:'admin123', role:'admin', name:'管理员', createdAt:'' };
 
-async function loadData() {
-  const { data, error } = await supabase.from('pawndata').select('key, value');
-  if (error) throw new Error('DB_READ_ERROR: ' + error.message);
-  if (!data || data.length === 0) {
-    const init = getInitData();
-    const rows = Object.entries(init).map(([key, value]) => ({ key, value }));
-    await supabase.from('pawndata').upsert(rows, { onConflict: 'key' });
-    return init;
-  }
-  const result = {};
-  data.forEach(row => { result[row.key] = row.value; });
-  const init = getInitData();
-  Object.keys(init).forEach(k => { if (result[k] === undefined) result[k] = init[k]; });
-  return result;
-}
-
+// ══════════════════════════════════════════
+// 读取所有数据（GET /api/data）
+// ══════════════════════════════════════════
 app.get('/api/data', async (req, res) => {
   try {
-    const data = await loadData();
-    if (!data || typeof data !== 'object') return res.status(500).json({ error: 'DATA_INVALID' });
-    const arrKeys = ['loans','payments','extensions','expenses','stores','users','appointments'];
-    arrKeys.forEach(k => { if (!Array.isArray(data[k])) data[k] = []; });
-    if (!data.nextId) data.nextId = 1001;
-    if (!data.company) data.company = getInitData().company;
-    res.json(data);
+    // 并行读取所有表
+    const [
+      loansRes, paymentsRes, extensionsRes, expensesRes,
+      appointmentsRes, usersRes, configRes
+    ] = await Promise.all([
+      supabase.from('loans').select('id, data').order('id'),
+      supabase.from('payments').select('id, data').order('id'),
+      supabase.from('extensions').select('id, data').order('id'),
+      supabase.from('expenses').select('id, data').order('id'),
+      supabase.from('appointments').select('id, data').order('id'),
+      supabase.from('users').select('id, data').order('id'),
+      supabase.from('config').select('key, value')
+    ]);
+
+    // 转换格式：每行的data字段就是原始对象
+    const loans = (loansRes.data || []).map(r => ({ ...r.data, id: r.id }));
+    const payments = (paymentsRes.data || []).map(r => ({ ...r.data, id: r.id }));
+    const extensions = (extensionsRes.data || []).map(r => ({ ...r.data, id: r.id }));
+    const expenses = (expensesRes.data || []).map(r => ({ ...r.data, id: r.id }));
+    const appointments = (appointmentsRes.data || []).map(r => ({ ...r.data, id: r.id }));
+
+    // 用户：如果没有则初始化
+    let users = (usersRes.data || []).map(r => ({ ...r.data, id: r.id }));
+    if (users.length === 0) {
+      await supabase.from('users').upsert([{ id: 1, data: DEFAULT_ADMIN }], { onConflict: 'id' });
+      users = [DEFAULT_ADMIN];
+    }
+
+    // 配置：stores、company、nextId
+    const configMap = {};
+    (configRes.data || []).forEach(r => { configMap[r.key] = r.value; });
+
+    // nextId：取最大loan id + 1，或从config取
+    let nextId = configMap['nextId'] || 1001;
+    if (loans.length > 0) {
+      const maxId = Math.max(...loans.map(l => +l.id || 0));
+      if (maxId >= nextId) nextId = maxId + 1;
+    }
+
+    const result = {
+      loans,
+      payments,
+      extensions,
+      expenses,
+      appointments,
+      users,
+      stores: configMap['stores'] || [],
+      company: configMap['company'] || { name: 'PAWN SYSTEM', address: '', phone: '', note: '' },
+      nextId
+    };
+
+    res.json(result);
   } catch(e) {
+    console.error('GET /api/data error:', e.message);
     res.status(500).json({ error: 'DB_ERROR', message: e.message });
   }
 });
 
+// ══════════════════════════════════════════
+// 保存数据（POST /api/data）
+// 智能差量更新：只更新变化的记录
+// ══════════════════════════════════════════
 app.post('/api/data', async (req, res) => {
   try {
     const body = req.body;
-    const allowed = ['loans','payments','extensions','expenses','stores','company','nextId','users','appointments'];
-    const rows = Object.entries(body)
-      .filter(([k]) => allowed.includes(k))
-      .map(([key, value]) => ({ key, value }));
-    const { error } = await supabase.from('pawndata').upsert(rows, { onConflict: 'key' });
-    if (error) return res.status(500).json({ error: error.message });
+    const ops = [];
+
+    // 保存loans
+    if (Array.isArray(body.loans)) {
+      const rows = body.loans.map(l => ({ id: l.id, data: l }));
+      if (rows.length > 0) {
+        ops.push(supabase.from('loans').upsert(rows, { onConflict: 'id' }));
+      }
+    }
+
+    // 保存payments
+    if (Array.isArray(body.payments)) {
+      const rows = body.payments.map(p => ({ id: p.id, loan_id: p.loanId, data: p }));
+      if (rows.length > 0) {
+        ops.push(supabase.from('payments').upsert(rows, { onConflict: 'id' }));
+      }
+    }
+
+    // 保存extensions
+    if (Array.isArray(body.extensions)) {
+      const rows = body.extensions.map(e => ({ id: e.id, loan_id: e.loanId, data: e }));
+      if (rows.length > 0) {
+        ops.push(supabase.from('extensions').upsert(rows, { onConflict: 'id' }));
+      }
+    }
+
+    // 保存expenses
+    if (Array.isArray(body.expenses)) {
+      const rows = body.expenses.map(e => ({ id: e.id, data: e }));
+      if (rows.length > 0) {
+        ops.push(supabase.from('expenses').upsert(rows, { onConflict: 'id' }));
+      }
+    }
+
+    // 保存appointments
+    if (Array.isArray(body.appointments)) {
+      const rows = body.appointments.map(a => ({ id: a.id, data: a }));
+      if (rows.length > 0) {
+        ops.push(supabase.from('appointments').upsert(rows, { onConflict: 'id' }));
+      }
+    }
+
+    // 保存users
+    if (Array.isArray(body.users)) {
+      const rows = body.users.map(u => ({ id: u.id, data: u }));
+      if (rows.length > 0) {
+        ops.push(supabase.from('users').upsert(rows, { onConflict: 'id' }));
+      }
+    }
+
+    // 保存config（stores、company、nextId）
+    const configRows = [];
+    if (body.stores !== undefined) configRows.push({ key: 'stores', value: body.stores });
+    if (body.company !== undefined) configRows.push({ key: 'company', value: body.company });
+    if (body.nextId !== undefined) configRows.push({ key: 'nextId', value: body.nextId });
+    if (configRows.length > 0) {
+      ops.push(supabase.from('config').upsert(configRows, { onConflict: 'key' }));
+    }
+
+    // 并行执行所有操作
+    const results = await Promise.all(ops);
+    const errors = results.filter(r => r.error).map(r => r.error.message);
+    if (errors.length > 0) {
+      console.error('Save errors:', errors);
+      return res.status(500).json({ error: errors.join('; ') });
+    }
+
     res.json({ ok: true });
   } catch(e) {
+    console.error('POST /api/data error:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
 
+// ══════════════════════════════════════════
+// 删除单条记录（POST /api/delete-record）
+// ══════════════════════════════════════════
+app.post('/api/delete-record', async (req, res) => {
+  try {
+    const { table, id } = req.body;
+    const allowed = ['loans','payments','extensions','expenses','appointments','users'];
+    if (!allowed.includes(table)) return res.json({ ok: false, error: '无效表名' });
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) return res.json({ ok: false, error: error.message });
+    res.json({ ok: true });
+  } catch(e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+// ══════════════════════════════════════════
+// 测试连接
+// ══════════════════════════════════════════
 app.get('/api/test', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('pawndata').select('key').limit(1);
+    const { data, error } = await supabase.from('loans').select('id').limit(1);
     if (error) return res.json({ ok: false, message: error.message });
-    res.json({ ok: true, message: '数据库连接正常', rows: data.length });
+    res.json({ ok: true, message: '数据库连接正常（新表结构）', loans: data.length });
   } catch(e) {
     res.json({ ok: false, message: e.message });
   }
 });
 
-// 紧急重置管理员账号（访问此接口即可重置）
+// ══════════════════════════════════════════
+// 重置管理员
+// ══════════════════════════════════════════
 app.get('/api/reset-admin', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('pawndata').select('key, value').eq('key', 'users');
-    if (error) throw new Error(error.message);
-    const defaultAdmin = { id:1, username:'admin', password:'admin123', role:'admin', name:'管理员', createdAt:'' };
-    let users = [];
-    if (data && data.length > 0 && Array.isArray(data[0].value)) {
-      users = data[0].value;
-      // 找到admin账号并重置，如果没有则新增
-      const idx = users.findIndex(u => u.username === 'admin');
-      if (idx >= 0) {
-        users[idx] = { ...users[idx], password: 'admin123', role: 'admin' };
-      } else {
-        users.unshift(defaultAdmin);
-      }
-    } else {
-      users = [defaultAdmin];
-    }
-    const { error: e2 } = await supabase.from('pawndata').upsert([{ key: 'users', value: users }], { onConflict: 'key' });
-    if (e2) throw new Error(e2.message);
-    res.json({ ok: true, message: '✅ 管理员账号已重置！用户名: admin，密码: admin123，请立即登录并修改密码。' });
+    await supabase.from('users').upsert([{ id: 1, data: DEFAULT_ADMIN }], { onConflict: 'id' });
+    res.json({ ok: true, message: '✅ 管理员账号已重置！用户名: admin，密码: admin123' });
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
+// ══════════════════════════════════════════
+// 备份
+// ══════════════════════════════════════════
 app.get('/api/backup', async (req, res) => {
   try {
-    const data = await loadData();
+    const [loansRes, paymentsRes, usersRes, configRes] = await Promise.all([
+      supabase.from('loans').select('id, data').order('id'),
+      supabase.from('payments').select('id, data').order('id'),
+      supabase.from('users').select('id, data').order('id'),
+      supabase.from('config').select('key, value')
+    ]);
+    const configMap = {};
+    (configRes.data||[]).forEach(r=>{ configMap[r.key]=r.value; });
+    const backup = {
+      loans: (loansRes.data||[]).map(r=>({...r.data,id:r.id})),
+      payments: (paymentsRes.data||[]).map(r=>({...r.data,id:r.id})),
+      users: (usersRes.data||[]).map(r=>({...r.data,id:r.id})),
+      stores: configMap['stores']||[],
+      company: configMap['company']||{},
+      nextId: configMap['nextId']||1001,
+      backupDate: new Date().toISOString()
+    };
     res.setHeader('Content-Disposition', `attachment; filename="pawn_backup_${new Date().toISOString().slice(0,10)}.json"`);
     res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(data, null, 2));
+    res.send(JSON.stringify(backup, null, 2));
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// ── 材料上传（需要Supabase Storage Pro）──
+// ══════════════════════════════════════════
+// 材料上传
+// ══════════════════════════════════════════
 app.post('/api/upload-doc', async (req, res) => {
   try {
     const { loanId, docKey, base64 } = req.body;
     if (!loanId || !docKey || !base64) return res.json({ ok: false, error: '参数缺失' });
-
-    // base64 → Buffer
     const matches = base64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
     if (!matches) return res.json({ ok: false, error: '图片格式错误' });
     const buffer = Buffer.from(matches[2], 'base64');
     const filePath = `loans/${loanId}/${docKey}.jpg`;
-
     const { error } = await supabase.storage
       .from('pawn-documents')
       .upload(filePath, buffer, { contentType: 'image/jpeg', upsert: true });
     if (error) return res.json({ ok: false, error: error.message });
-
-    const { data: urlData } = supabase.storage
-      .from('pawn-documents')
-      .getPublicUrl(filePath);
-
+    const { data: urlData } = supabase.storage.from('pawn-documents').getPublicUrl(filePath);
     res.json({ ok: true, url: urlData.publicUrl });
-  } catch (e) {
+  } catch(e) {
     res.json({ ok: false, error: e.message });
   }
 });
@@ -155,14 +264,15 @@ app.post('/api/delete-doc', async (req, res) => {
     const filePath = `loans/${loanId}/${docKey}.jpg`;
     await supabase.storage.from('pawn-documents').remove([filePath]);
     res.json({ ok: true });
-  } catch (e) {
+  } catch(e) {
     res.json({ ok: false, error: e.message });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`\n${'═'.repeat(50)}`);
-  console.log(`  📱 手机抵押贷款管理系统`);
+  console.log(`  📱 手机抵押贷款管理系统 v2.0`);
+  console.log(`  ✅ 独立表结构 - 防并发覆盖`);
   console.log(`${'═'.repeat(50)}`);
   console.log(`  访问地址: http://localhost:${PORT}`);
   console.log(`${'═'.repeat(50)}\n`);
