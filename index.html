@@ -559,7 +559,6 @@ window.downloadBackup = async function() {
   const btn = event?.target;
   try {
     if(btn){ btn.textContent='⏳ 备份中...'; btn.disabled=true; }
-    await saveDB();
     const res = await fetch('/api/data', {cache:'no-store'});
     const data = await res.json();
     const now = new Date();
@@ -678,7 +677,7 @@ function updateUserBadge() {
 let _db=null, _dirty=false, _dbReady=false, _syncTimer=null, _lastSync=null;
 function DB_get(k){ return _db?_db[k]:null; }
 function DB_set(k,v){ if(!_db||!_dbReady){console.warn('DB not ready');return;} _db[k]=v; markDirty(); }
-function markDirty(){ if(!_dbReady) return; _dirty=true; clearTimeout(_syncTimer); _syncTimer=setTimeout(()=>{if(_dirty)saveDB();},800); }
+function markDirty(){ if(!_dbReady) return; _dirty=true; /* 不自动saveDB，改用saveRecord单条保存 */ }
 function setSyncStatus(s){
   const dot=document.querySelector('.sync-dot'), txt=document.getElementById('syncText');
   if(dot) dot.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
@@ -1700,10 +1699,9 @@ window.uploadDoc=async function(loanId, docKey, input){
     });
     const json=await res.json();
     if(!json.ok) throw new Error(json.error||'上传失败');
-    // 更新本地loans数据
     const loans=DB_get('loans')||[];
     const loan=loans.find(l=>l.id===loanId);
-    if(loan){ if(!loan.documents) loan.documents={}; loan.documents[docKey]=json.url; DB_set('loans',loans); }
+    if(loan){ if(!loan.documents) loan.documents={}; loan.documents[docKey]=json.url; DB_set('loans',loans); await saveRecord('loans',loan); }
     if(msgEl) msgEl.textContent='✅ 上传成功！';
     setTimeout(()=>viewLoan(loanId),600);
   }catch(e){
@@ -1721,7 +1719,7 @@ window.deleteDoc=async function(loanId, docKey){
     });
     const loans=DB_get('loans')||[];
     const loan=loans.find(l=>l.id===loanId);
-    if(loan&&loan.documents) { delete loan.documents[docKey]; DB_set('loans',loans); }
+    if(loan&&loan.documents) { delete loan.documents[docKey]; DB_set('loans',loans); await saveRecord('loans',loan); }
     viewLoan(loanId);
   }catch(e){ alert('删除失败：'+e.message); }
 };
@@ -1730,30 +1728,18 @@ window.toggleLockStatus=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
   const cur=loans[li].lockStatus||'未锁';
-  const next=cur==='锁机'?'未锁':'锁机';
-  loans[li].lockStatus=next;
+  loans[li].lockStatus=cur==='锁机'?'未锁':'锁机';
   DB_set('loans',loans);
-  // 刷新列表
-  const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
-  const st=document.getElementById('lStatusFilter')?.value||'';
-  let list=DB_get('loans')||[];
-  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
-  if(st) list=list.filter(l=>l.status===st);
-  const wrap=document.getElementById('loanTableWrap');
-  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
+  saveRecord('loans',loans[li]);
+  filterLoans();
 };
 window.toggleBlacklist=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
   loans[li].blacklist=!loans[li].blacklist;
   DB_set('loans',loans);
-  const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
-  const st=document.getElementById('lStatusFilter')?.value||'';
-  let list=DB_get('loans')||[];
-  if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
-  if(st) list=list.filter(l=>l.status===st);
-  const wrap=document.getElementById('loanTableWrap');
-  if(wrap) wrap.innerHTML=buildLoanTable(list.slice().reverse());
+  saveRecord('loans',loans[li]);
+  filterLoans();
 };
 // ── 用户管理页面 ──
 function renderUserMgmt() {
@@ -1817,8 +1803,8 @@ window.addUser = async function() {
   msg.innerHTML='<span style="color:var(--sky)">⏳ 保存中...</span>';
   try {
     DB_set('users', users);
-    // 强制立即同步到服务器
-    await saveDB();
+    // 单条保存用户
+    const newUser=users[users.length-1]; await saveRecord('users', newUser);
     msg.innerHTML='<span style="color:green">✅ 用户添加成功</span>';
     ['nu_name','nu_username','nu_password'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     setTimeout(()=>{ const mc=document.getElementById('mainContent'); if(mc){mc.innerHTML=renderUserMgmt();} }, 600);
@@ -1831,7 +1817,7 @@ window.deleteUser = async function(id) {
   if (!confirm('确认删除该用户？')) return;
   let users = getUsers().filter(u=>u.id!==id);
   DB_set('users', users);
-  await saveDB();
+  fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'users',id})});
   const mc=document.getElementById('mainContent'); if(mc){mc.innerHTML=renderUserMgmt();}
 };
 
@@ -1843,7 +1829,7 @@ window.resetUserPwd = async function(id) {
   if (idx>=0) {
     users[idx].password = newPwd;
     DB_set('users', users);
-    await saveDB();
+    await saveRecord('users', users[idx]);
     alert('✅ 密码重置成功');
   }
 };
@@ -1998,7 +1984,6 @@ window.deleteLoan=function(id){
   DB_set('loans',loans.filter(x=>x.id!==id));
   // 同步删除服务器记录
   fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'loans',id})});
-  saveDB();
   filterLoans();
 };
 
@@ -2334,7 +2319,7 @@ window.calcExtTotal=function(){
   const tot=document.getElementById('extDayTotal');
   if(tot) tot.value=fmt(mInt+mP);
 };
-window.submitExtension=function(){
+window.submitExtension=async function(){
   if(_currentUser&&_currentUser.role==='readonly'){alert('无权限：只读账户不能操作续期');return;}
   const id=+(document.getElementById('extLoan')?.value||0);
   if(!id){showMsg('extMsg',t('msgSelectLoan'),'red');return;}
@@ -2373,14 +2358,17 @@ window.submitExtension=function(){
   exts.push({id:newId(),loanId:id,customer:l.customer,date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   DB_set('extensions',exts);
   showMsg('extMsg','⏳ 正在保存续期记录...','');
-  saveDB().then(()=>{
-    if(!_dirty){
-      showMsg('extMsg',`✅ 续期成功！#${id} ${l.customer} — +${extPeriods} ${t('period')}`,'green');
-      setTimeout(()=>nav('extension'),1500);
-    } else {
-      showMsg('extMsg','❌ 保存失败！请点击手动备份保存数据后重试','red');
-    }
-  });
+  const extRecord = exts[exts.length-1];
+  const [lExtOk, eOk] = await Promise.all([
+    saveRecord('loans', l),
+    saveRecord('extensions', extRecord)
+  ]);
+  if(lExtOk && eOk){
+    showMsg('extMsg',`✅ 续期成功！#${id} ${l.customer} — +${extPeriods} ${t('period')}`,'green');
+    setTimeout(()=>nav('extension'),1500);
+  } else {
+    showMsg('extMsg','❌ 保存失败！请重试','red');
+  }
 };
 
 // ══════════════════════════════════════════════════════
@@ -3240,7 +3228,6 @@ window.deleteAppointment=function(id){
   const appts=(DB_get('appointments')||[]).filter(a=>a.id!==id);
   DB_set('appointments',appts);
   fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'appointments',id})});
-  saveDB();
   nav('appointment');
 };
 
@@ -3338,10 +3325,12 @@ window.submitExpense=function(){
   const amount=+(document.getElementById('exAmt')?.value||0);
   if(!amount){showMsg('exMsg',t('msgFillAmount'),'red');return;}
   const expenses=DB_get('expenses')||[];
-  expenses.push({id:newId(),date:document.getElementById('exDate')?.value||today(),
+  const exp={id:newId(),date:document.getElementById('exDate')?.value||today(),
     cat:document.getElementById('exCat')?.value||'',amount,
-    note:document.getElementById('exNote')?.value||''});
+    note:document.getElementById('exNote')?.value||''};
+  expenses.push(exp);
   DB_set('expenses',expenses);
+  saveRecord('expenses',exp);
   document.getElementById('exAmt').value=''; document.getElementById('exNote').value='';
   showMsg('exMsg','✅ '+t('saved'),'green');
   nav('expenses');
