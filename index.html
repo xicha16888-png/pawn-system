@@ -1798,7 +1798,7 @@ window.toggleLockStatus=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
   const cur=loans[li].lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁';
-  loans[li].lockStatus=cur===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁':_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机';
+  loans[li].lockStatus=cur==='锁机'?'未锁':'锁机';
   DB_set('loans',loans);
   saveRecord('loans',loans[li]);
   filterLoans();
@@ -2182,7 +2182,7 @@ window.submitPayment=async function(){
   const pi=l.schedule.findIndex(p=>p.period===periodNo); if(pi<0) return;
   if(l.schedule[pi].paid){showMsg('payMsg',t('msgPeriodPaid'),'amber');return;}
   l.schedule[pi]={...l.schedule[pi],paid:true,paidDate:pDate,paidPrincipal:principal,paidInterest:interest,penalty};
-  if(l.schedule.every(p=>p.paid)) l.status=_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清';
+  if(l.schedule.every(p=>p.paid)) l.status='已结清';
   loans[li]=l; DB_set('loans',loans);
   const pays=DB_get('payments')||[];
   const payId=await getNextId('payments');
@@ -2236,7 +2236,7 @@ window.deletePayment=function(id){
     const pi=loans[li].schedule.findIndex(p=>p.period===pay.period);
     if(pi>=0){
       loans[li].schedule[pi]={...loans[li].schedule[pi],paid:false,paidDate:null,paidPrincipal:0,paidInterest:0,penalty:0};
-      if(loans[li].status===_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清') loans[li].status=_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中';
+      if(loans[li].status==='已结清') loans[li].status='进行中';
       DB_set('loans',loans);
     }
   }
@@ -2475,7 +2475,7 @@ window.submitExtension=async function(){
     startDate=new Date(startDate); startDate.setMonth(startDate.getMonth()+1);
   }
   l.periods+=extPeriods;
-  l.status=_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中';
+  l.status='进行中';
   if(!l.extensions) l.extensions=[];
   l.extensions.push({date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   loans[li]=l; DB_set('loans',loans);
