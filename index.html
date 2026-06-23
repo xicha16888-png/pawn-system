@@ -2193,8 +2193,18 @@ function renderExtension(){
     return `<div class="page-header"><div class="page-title">🔄 ${t('extension')}</div></div>
     <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作续期</p></div></div>`;
   }
-  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
-  const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} · ${esc(l.phoneModel)} · ${fmt(l.loanAmount)}</option>`).join('');
+  const minPaid={2:1,3:1,4:2,5:3,6:3};
+  const allLoans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+
+  // 生成选项时显示当前已还期数和是否满足条件
+  const opts=allLoans.map(l=>{
+    const total=l.periods||l.schedule.length||0;
+    const paid=l.schedule.filter(p=>p.paid).length;
+    const req=minPaid[total]||(total>6?Math.ceil(total/2):1);
+    const ok=paid>=req;
+    const tag=ok?`✅ 可续期(已还${paid}/${total}期)`:`❌ 需还${req}期(已还${paid}/${total}期)`;
+    return `<option value="${l.id}" ${ok?'':'style="color:#aaa"'}>#${l.id} — ${esc(l.customer)} · ${tag}</option>`;
+  }).join('');
   const exts=(DB_get('extensions')||[]).slice().reverse();
   return `
   <div class="page-header">
@@ -2202,6 +2212,10 @@ function renderExtension(){
     <div class="page-sub">${t('extensionSub')}</div>
   </div>
   <div class="card" style="border-left:4px solid var(--purple)">
+    <div style="background:#f3e5f5;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#6a1b9a">
+      <b>📋 续期条件：</b>借2-3期需还1期 · 借4期需还2期 · 借5-6期需还3期 · 已结清可重新借<br>
+      <b>⚠️ 同名限制：</b>同一客户不能同时有两笔进行中的合同
+    </div>
     <div class="form-grid">
       <div class="form-group span3"><label>${t('selectLoanExt')}</label>
         <select id="extLoan" onchange="loadExtLoan()">${opts||`<option>${t('noRecord')}</option>`}</select>
@@ -2337,6 +2351,24 @@ window.submitExtension=async function(){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
   const l=loans[li];
+
+  // ── 限制1：还款期数检查 ──
+  const totalPeriods=l.periods||l.schedule.length||0;
+  const paidPeriods=l.schedule.filter(p=>p.paid).length;
+  const minPaid={2:1,3:1,4:2,5:3,6:3};
+  const required=minPaid[totalPeriods]||(totalPeriods>6?Math.ceil(totalPeriods/2):1);
+  if(paidPeriods<required){
+    showMsg('extMsg',`❌ 不满足续期条件！${totalPeriods}期贷款需还清 ${required} 期，当前已还 ${paidPeriods} 期`,'red');
+    return;
+  }
+
+  // ── 限制2：同名客户不能同时在进行中 ──
+  const custName=(l.customer||'').trim().toLowerCase();
+  const dupLoan=loans.find(x=>x.id!==id && x.status==='进行中' && (x.customer||'').trim().toLowerCase()===custName);
+  if(dupLoan){
+    showMsg('extMsg',`❌ 客户 "${l.customer}" 已有进行中的合同 #${dupLoan.id}，不能同时续期！`,'red');
+    return;
+  }
   const extPeriods=+(document.getElementById('extPeriods')?.value||1);
   const extDate=document.getElementById('extDate')?.value||today();
   const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
