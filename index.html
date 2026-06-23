@@ -253,11 +253,11 @@ const I18N = {
     systemTitle:'手机抵押贷款管理系统', systemSub:'抵押管理系统',
     synced:'已同步', syncing:'同步中...', syncError:'同步失败!',
     mainMenu:'主菜单', loanMgmt:'贷款管理', reports:'统计报表', settings:'基础设置',
-    home:'系统首页', loanAdd:'抵押登记', loanList:'贷款查询',
-    paymentAdd:'收息还款', extension:'续期办理',
+    home:'系统首页', loanAdd:t('loanAdd'), loanList:t('loanList'),
+    paymentAdd:t('paymentAdd'), extension:t('extension'),
     stats:'利息统计', financeReport:'财务报表',
-    reminderOverdue:'逾期提醒', reminderTomorrow:'明日到期',
-    company:'单位信息', expenses:'日常开支',
+    reminderOverdue:t('overdueTitle'), reminderTomorrow:'明日到期',
+    company:t('companyTitle'), expenses:t('expensesTitle'),
     // loan form
     loanDate:'贷款日期', customerName:'客户姓名 *', customerPhone:'客户电话',
     customerId:'身份证号', loanAmount:'贷款金额 ($) *',
@@ -265,46 +265,46 @@ const I18N = {
     phoneBrand:'手机品牌', phoneModel:'型号 *', phoneStorage:'内存',
     phoneColor:'颜色', phoneCondition:'成色 *', phoneImei:'IMEI号',
     phoneNote:'手机备注', shopName:'店铺名称', salesperson:'业务员',
-    remarks:'备注',
+    remarks:t('remarks'),
     // phone condition
     cond100:'全新', cond95:'99成新', cond9:'9成新', cond8:'8成新', cond7:'7成及以下',
     // calc
     monthlyInterest:'每月利息 ($)', monthlyPrincipal:'每期本金 ($)', totalInterest:'利息总额 ($)',
     totalRepay:'还款总额 ($)', saveLoan:'✅ 保存贷款合同', viewLoans:'📋 查看贷款列表',
     // list
-    loanListTitle:'贷款查询', searchPlaceholder:'搜索客户/合同号/型号/IMEI...',
+    loanListTitle:t('loanList'), searchPlaceholder:'搜索客户/合同号/型号/IMEI...',
     newLoanBtn:'➕ 新建抵押', allStatus:'全部状态',
-    active:'进行中', settled:'已结清', extended:'已续期',
-    colNo:'#', colDate:'日期', colCustomer:'客户', colPhone:'电话',
-    colModel:'型号', colImei:'IMEI', colLoanAmt:'贷款额', colPeriods:'期数',
-    colRate:'月利率', colMonthly:'每月利息', colProgress:'进度', colStatus:'状态', colAction:'操作',
-    viewSchedule:'查看计划', deleteBtn:'删除',
+    active:_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中', settled:_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清', extended:'已续期',
+    colNo:'#', colDate:'日期', colCustomer:t('referralCustomer'), colPhone:_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'电话',
+    colModel:'型号', colImei:'IMEI', colLoanAmt:_lang==='km'?'ចំនួន':_lang==='en'?'Amount':'贷款额', colPeriods:'期数',
+    colRate:_lang==='km'?'អត្រា/ខែ':_lang==='en'?'Monthly Rate':'月利率', colMonthly:'每月利息', colProgress:'进度', colStatus:'状态', colAction:'操作',
+    viewSchedule:t('viewSchedule'), deleteBtn:t('deleteBtn'),
     // payment
-    paymentTitle:'收息还款', selectLoan:'选择合同 *',
+    paymentTitle:t('paymentAdd'), selectLoan:'选择合同 *',
     paymentDate:'还款日期', payPeriod:'还款期次',
     paidInterest:'实收利息 ($)', paidPrincipal:'实收本金 ($)',
     penalty:'滞纳金 ($)', totalPayment:'本次合计 ($)',
-    confirmPayment:'✅ 确认收款', recentPayments:'最近收款记录',
+    confirmPayment:'✅ 确认收款', recentPayments:t('recentPayments'),
     // extension
-    extensionTitle:'续期办理', extensionSub:'延长贷款期限，重新计算还款计划',
+    extensionTitle:t('extension'), extensionSub:'延长贷款期限，重新计算还款计划',
     selectLoanExt:'选择合同 *', currentInfo:'当前贷款信息',
     remainPrincipal:'剩余本金 ($)', extPeriods:'续期期数',
-    extFee:'续期手续费 ($)', newMonthlyInterest:'续期后每月利息 ($)',
+    extFee:'续期手续费 ($)', newMonthlyInterest:t('newMonthlyInterest'),
     confirmExtension:'✅ 确认续期',
     // stats
     statsTitle:'利息统计', totalInterestCollected:'累计收息',
     totalPrincipalCollected:'累计收回本金', pendingPrincipal:'待收本金',
-    activeLoans:'进行中贷款', overdueLoans:'逾期贷款',
+    activeLoans:t('activeLoans'), overdueLoans:'逾期贷款',
     monthlyStats:'按月统计',
     // finance
     financeTitle:'财务报表',
     // overdue
-    overdueTitle:'逾期提醒', noOverdue:'暂无逾期账单',
-    tomorrowTitle:'明日到期提醒',
+    overdueTitle:t('overdueTitle'), noOverdue:'暂无逾期账单',
+    tomorrowTitle:t('tomorrowTitle'),
     // common
-    save:'保存', cancel:'取消', delete:'删除', noData:'暂无数据',
+    save:'保存', cancel:t('cancel'), delete:t('deleteBtn'), noData:'暂无数据',
     noRecord:'暂无记录', totalRow:'合计', more:'更多',
-    period:'期', days:'天', daysOverdue:'逾期',
+    period:'期', days:'天', daysOverdue:_lang==='km'?'ហួសកំណត់':_lang==='en'?'Overdue':'逾期',
     msgFillCustomer:'请填写客户姓名', msgFillAmount:'请填写贷款金额',
     msgFillModel:'请填写手机型号', msgFillCondition:'请选择手机成色',
     msgFillDue:'请选择首次还款日', msgSelectLoan:'请选择合同',
@@ -314,17 +314,17 @@ const I18N = {
     apptCustName:'客户姓名 *', apptPhone:'联系方式 *', apptSource:'客户来源 *',
     apptModel:'手机型号', apptDate:'到店日期 *', apptTime:'到店时间',
     apptStore:'服务地点 *', apptStaff:'预约客服',
-    apptNote:'备注', apptSave:'💾 保存预约单', apptCancel:'取消',
+    apptNote:t('remarks'), apptSave:'💾 保存预约单', apptCancel:t('cancel'),
     apptList:'预约单列表', apptAll:'全部', apptPending:'待到店',
     apptArrived:'已到店', apptConverted:'已成交', apptFailed:'未成交', apptNoShow:'爽约',
     apptFailReason:'未成交原因', apptUpdateStatus:'更新状态', apptTransfer:'📋转单',
-    apptDelete:'删除', apptFailTitle:'📝 填写未成交原因', apptFailPlaceholder:'请填写未成交原因（如：利率太高、手机成色问题、客户改主意等）',
+    apptDelete:t('deleteBtn'), apptFailTitle:'📝 填写未成交原因', apptFailPlaceholder:'请填写未成交原因（如：利率太高、手机成色问题、客户改主意等）',
     apptConfirm:'✅ 确认保存', apptAllStaff:'👤 全部客服', apptClear:'✕ 清除',
     apptTodayAlert:'今日有', apptTodayAlert2:'个预约待到店',
-    apptSrcFB:'Facebook', apptSrcTikTok:'TikTok', apptSrcIG:'Instagram',
-    apptSrcReferral:'转介绍', apptSrcWalk:'自然到店', apptSrcOther:'其他',
+    apptSrcFB:t('apptSrcFB'), apptSrcTikTok:t('apptSrcTikTok'), apptSrcIG:'Instagram',
+    apptSrcReferral:_lang==='km'?'ណែនាំ':_lang==='en'?'Referral':t('interestReferral'), apptSrcWalk:t('apptSrcWalk'), apptSrcOther:t('apptSrcOther'),
     // expense
-    expensesTitle:'日常开支', addExpense:'新增开支',
+    expensesTitle:t('expensesTitle'), addExpense:t('addExpense'),
     expDate:'日期', expCat:'类别', expAmt:'金额 ($)', expNote:'说明',
     saveExpense:'✅ 保存开支',
   },
@@ -381,6 +381,30 @@ const I18N = {
     expensesTitle:'Expenses', addExpense:'Add Expense',
     expDate:'Date', expCat:'Category', expAmt:'Amount ($)', expNote:'Note',
     saveExpense:'✅ Save Expense',
+    // appointment en
+    appointmentTitle:'Customer Appointments', appointmentList:'Appointment List', appointmentAdd:'New Appointment',
+    apptCustName:'Customer Name *', apptPhone:'Contact *', apptSource:'Source *',
+    apptModel:'Phone Model', apptDate:'Visit Date *', apptTime:'Visit Time',
+    apptStore:'Location *', apptStaff:'Staff',
+    apptNote:'Notes', apptSave:'💾 Save', apptCancel:'Cancel',
+    apptList:'Appointment List', apptAll:'All', apptPending:'Pending',
+    apptArrived:'Arrived', apptConverted:'Converted', apptFailed:'Not Converted', apptNoShow:'No Show',
+    apptFailReason:'Reason', apptUpdateStatus:'Update Status', apptTransfer:'📋 Convert',
+    apptDelete:'Delete', apptFailTitle:'📝 Reason for Not Converting', apptFailPlaceholder:'Enter reason',
+    apptConfirm:'✅ Confirm', apptAllStaff:'👤 All Staff', apptClear:'✕ Clear',
+    apptTodayAlert:'Today has', apptTodayAlert2:'pending appointments',
+    apptSrcFB:t('apptSrcFB'), apptSrcTikTok:t('apptSrcTikTok'), apptSrcIG:'Instagram',
+    apptSrcReferral:'Referral', apptSrcWalk:'Walk-in', apptSrcOther:'Other',
+    // extra en
+    emergencyContact:'Emergency Contact', dobLabel:'Date of Birth', ageLabel:'Age',
+    interestType:'Interest Type', interestNormal:'Normal (11.5%)', interestReduced:'Reduced Rate',
+    interestReferral:'Referral', referralType:'Referrer Type', referralName:'Referrer Name',
+    referralCustomer:'Customer', referralStaff:'Staff',
+    actualDisbursement:'Actual Disbursement ($)',
+    companyTitle:'Company Info', companyName:'Name', companyAddress:'Address',
+    companyPhone:'Phone', companyNote:'Note', saveCompany:'✅ Save',
+    backupTitle:'Data Backup', backupBtn:'💾 Backup', restoreBtn:'📂 Restore',
+    extNewAmount:'New Amount ($) (0=no change)',
   },
   km: {
     systemTitle:'ប្រព័ន្ធប្រាក់កម្ចីទូរសព្ទ', systemSub:'ប្រព័ន្ធគ្រប់គ្រង',
@@ -434,7 +458,33 @@ const I18N = {
     msgPeriodPaid:'ខែនេះបានចុះហើយ', saved:'បានរក្សា', added:'បានបន្ថែម',
     expensesTitle:'ការចំណាយ', addExpense:'បន្ថែមការចំណាយ',
     expDate:'កាល', expCat:'ប្រភេទ', expAmt:'ចំនួន ($)', expNote:'ការពិពណ៌នា',
+    expDate:'កាលបរិច្ឆេទ', expCat:'ប្រភេទ', expAmt:'ចំនួន ($)', expNote:'កំណត់ចំណាំ',
     saveExpense:'✅ រក្សាទុក',
+    appointmentTitle:'ការណាត់ជួបអតិថិជន', appointmentList:'បញ្ជីណាត់ជួប', appointmentAdd:'ណាត់ជួបថ្មី',
+    apptCustName:'ឈ្មោះអតិថិជន *', apptPhone:'ទំនាក់ទំនង *', apptSource:'ប្រភព *',
+    apptModel:'ម៉ូដែលទូរស័ព្ទ', apptDate:'កាលបរិច្ឆេទមក *', apptTime:'ពេលវេលាមក',
+    apptStore:'ទីតាំង *', apptStaff:'បុគ្គលិក',
+    apptNote:'កំណត់ចំណាំ', apptSave:'💾 រក្សាទុក', apptCancel:'បោះបង់',
+    apptList:'បញ្ជីណាត់ជួប', apptAll:'ទាំងអស់', apptPending:'រង់ចាំ',
+    apptArrived:'បានមក', apptConverted:'បានលក់', apptFailed:'មិនបានលក់', apptNoShow:'មិនមក',
+    apptFailReason:'មូលហេតុ', apptUpdateStatus:'ធ្វើបច្ចុប្បន្នភាព', apptTransfer:'📋 បំប្លែង',
+    apptDelete:'លុប', apptFailTitle:'📝 មូលហេតុ', apptFailPlaceholder:'បញ្ចូលមូលហេតុ',
+    apptConfirm:'✅ បញ្ជាក់', apptAllStaff:'👤 បុគ្គលិកទាំងអស់', apptClear:'✕ សម្អាត',
+    apptTodayAlert:'ថ្ងៃនេះមាន', apptTodayAlert2:'ការណាត់ជួបរង់ចាំ',
+    apptSrcFB:t('apptSrcFB'), apptSrcTikTok:t('apptSrcTikTok'), apptSrcIG:'Instagram',
+    apptSrcReferral:'ណែនាំ', apptSrcWalk:'មកដោយខ្លួនឯង', apptSrcOther:'ផ្សេងទៀត',
+    emergencyContact:'ទំនាក់ទំនងបន្ទាន់', dobLabel:'ថ្ងៃខែឆ្នាំកំណើត', ageLabel:'អាយុ',
+    interestType:'ប្រភេទការប្រាក់', interestNormal:'ធម្មតា (11.5%)', interestReduced:'បញ្ចុះ',
+    interestReferral:'ណែនាំ', referralType:'ប្រភេទ', referralName:'ឈ្មោះអ្នកណែនាំ',
+    referralCustomer:'អតិថិជន', referralStaff:'បុគ្គលិក',
+    actualDisbursement:'ការបញ្ចេញប្រាក់ ($)',
+    companyTitle:'ព័ត៌មានក្រុមហ៊ុន', companyName:'ឈ្មោះ', companyAddress:'អាសយដ្ឋាន',
+    companyPhone:'ទូរស័ព្ទ', companyNote:'កំណត់ចំណាំ', saveCompany:'✅ រក្សាទុក',
+    backupTitle:'ការបម្រុងទុក', backupBtn:'💾 ចម្លង', restoreBtn:'📂 ស្ដារ',
+    extNewAmount:'ចំនួនថ្មី ($) (0=មិនផ្លាស់ប្តូរ)',
+    newLoan:'ប្រាក់កម្ចីថ្មី', lockStatus:'ចាក់សោ', unlocked:'មិនចាក់',
+    blacklist:'បញ្ជីខ្មៅ', whitelist:'បញ្ជីស',
+    viewPlan:'មើលផែនការ', edit:'កែប្រែ', lockPhone:'ចាក់សោទូរស័ព្ទ',
   }
 };
 function t(k){ return (I18N[_lang]||I18N.zh)[k] || k; }
@@ -481,7 +531,7 @@ function daysDiff(d1,d2){ return Math.floor((new Date(d2)-new Date(d1))/86400000
 
 // ── Status helpers ──
 function statusBadge(status){
-  if(status==='已结清'||status==='Settled') return `<span class="badge badge-green">${t('settled')}</span>`;
+  if(status===_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清'||status==='Settled') return `<span class="badge badge-green">${t('settled')}</span>`;
   if(status==='已续期'||status==='Extended') return `<span class="badge badge-purple">${t('extended')}</span>`;
   return `<span class="badge badge-blue">${t('active')}</span>`;
 }
@@ -584,14 +634,14 @@ window.downloadBackup = async function() {
     await new Promise(r=>setTimeout(r,600));
 
     // ── 2. 合同表 CSV ──
-    const loanHeaders = ['合同ID','合同编号','日期','客户姓名','客户电话','身份证号','店铺','业务员','手机品牌','手机型号','IMEI','贷款金额','实际放款','月利息','首次还款日','状态','锁机','黑名单','录入人'];
+    const loanHeaders = ['合同ID','合同编号','日期','客户姓名','客户电话','身份证号','店铺','业务员','手机品牌','手机型号','IMEI','贷款金额',_lang==='km'?'ការបញ្ចេញប្រាក់':_lang==='en'?'Actual Disbursement':'实际放款','月利息','首次还款日','状态',_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机',_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑名单','录入人'];
     const loanRows = loans.map(l => [
       l.id, l.contractNo||'', l.date||'', l.customer||'', l.customerPhone||'',
       l.idNumber||'', l.shopName||'', l.salesperson||'',
       l.phoneBrand||'', l.phoneModel||'', l.phoneImei||'',
       l.loanAmount||0, l.actualAmount||0, l.monthlyInterest||0,
       l.firstDue||'', l.status||'',
-      l.lockStatus||'未锁', l.blacklist?'黑名单':'白名单', l.createdBy||''
+      l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁', l.blacklist?_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑名单':_lang==='km'?'បញ្ជីស':_lang==='en'?'Whitelist':'白名单', l.createdBy||''
     ]);
     function toCSV(headers, rows) {
       const esc = v => { const s=String(v??'').replace(/"/g,'""'); return (s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s}"`:s; };
@@ -604,7 +654,7 @@ window.downloadBackup = async function() {
     await new Promise(r=>setTimeout(r,600));
 
     // ── 3. 还款记录 CSV ──
-    const payHeaders = ['记录ID','合同ID','客户','期数','日期','本金($)','利息($)','滞纳金($)','合计($)'];
+    const payHeaders = ['记录ID','合同ID',t('referralCustomer'),'期数','日期','本金($)','利息($)','滞纳金($)','合计($)'];
     const payRows = pays.map(p => [
       p.id, p.loanId, p.customer||'', p.period||'', p.date||'',
       p.paidPrincipal||0, p.paidInterest||0, p.penalty||0,
@@ -985,7 +1035,7 @@ function renderHome(){
   const loans=DB_get('loans')||[];
   const pays=DB_get('payments')||[];
   const td=today();
-  const active=loans.filter(l=>l.status==='进行中');
+  const active=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   const overdue=loans.filter(l=>l.schedule.some(p=>!p.paid&&p.dueDate<td));
   const totalInterest=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const totalPrincipal=pays.reduce((a,p)=>a+(+p.paidPrincipal||0),0);
@@ -1020,7 +1070,7 @@ function renderHome(){
     </div>
   </div>
   ${overdue.length>0?`<div class="alert alert-red">⚠️ ${overdue.length} ${_lang==='km'?'ប្រាក់កម្ចីហួស':_lang==='en'?'overdue loans':'笔逾期贷款'}
-    <button class="btn btn-danger btn-sm" style="margin-left:12px" onclick="nav('overdue')">${_lang==='km'?'មើល':_lang==='en'?'View':'查看'}</button></div>`:''}
+    <button class="btn btn-danger btn-sm" style="margin-left:12px" onclick="nav('overdue')">${_lang==='km'?'មើល':_lang==='en'?'View':_lang==='km'?'មើល':_lang==='en'?'View':'查看'}</button></div>`:''}
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
     ${[
       ['➕',t('loanAdd'),'loan-add'],
@@ -1057,17 +1107,17 @@ function renderLoanAdd(){
     <div class="page-sub">${_lang==='km'?'ចុះឈ្មោះទូរសព្ទបញ្ចាំ':_lang==='en'?'Register new phone collateral loan':'登记新手机抵押贷款'}</div>
   </div>
   <div class="card">
-    <div class="card-title" style="margin-bottom:14px">👤 ${_lang==='km'?'ព័ត៌មានអតិថិជន':_lang==='en'?'Customer Info':'客户信息'}</div>
+    <div class="card-title" style="margin-bottom:14px">👤 ${_lang==='km'?'ព័ត៌មានអតិថិជន':_lang==='en'?'Customer Info':_lang==='km'?'ព័ត៌មានអតិថិជន':_lang==='en'?'Customer Info':'客户信息'}</div>
     <div class="form-grid">
       <div class="form-group span3"><label>🔖 ${_lang==='km'?'លេខកិច្ចសន្យា':_lang==='en'?'Contract No.':'合同编号'}</label>
-        <input id="lContractNo" placeholder="${_lang==='km'?'លេខ（ស្រេចចិត្ត）':_lang==='en'?'Contract number (optional, auto if blank)':'合同编号（选填，不填则系统自动编号）'}" style="font-size:14px;font-weight:600;border:2px solid #f57c00;background:#fffde7">
+        <input id="lContractNo" placeholder="${_lang==='km'?'លេខ（ស្រេចចិត្ត）':_lang==='en'?'Contract number (optional, auto if blank)':_lang==='km'?'លេខកិច្ចសន្យា (ស្រេចចិត្ត)':_lang==='en'?'Contract No. (optional, auto if blank)':'合同编号（选填，不填则系统自动编号）'}" style="font-size:14px;font-weight:600;border:2px solid #f57c00;background:#fffde7">
       </div>
       <div class="form-group"><label>${t('loanDate')}</label><input type="date" id="lDate" value="${today()}" oninput="autoSetFirstDue()"></div>
       <div class="form-group"><label>${t('customerName')}</label><input id="lCust" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Full name':'客户全名'}"></div>
       <div class="form-group"><label>${t('customerPhone')}</label><input id="lPhone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone number':'联系电话'}"></div>
       <div class="form-group"><label>${t('customerId')}</label><input id="lId" placeholder="${_lang==='km'?'លេខ':_lang==='en'?'ID number':'身份证号'}"></div>
-      <div class="form-group"><label>${_lang==='km'?'ថ្ងៃខែឆ្នាំកំណើត':_lang==='en'?'Date of Birth':'出生年月日'}</label><input type="date" id="lDob" oninput="calcAgeFromDob()"></div>
-      <div class="form-group"><label>${_lang==='km'?'អាយុ':_lang==='en'?'Age':'年龄'}</label><input type="number" id="lAge" placeholder="${_lang==='km'?'ស្វ័យប្រវត្តិ':_lang==='en'?'Auto-calculated':'自动计算'}" min="18" max="99" style="background:#f5f5f5"></div>
+      <div class="form-group"><label>${_lang==='km'?'ថ្ងៃខែឆ្នាំកំណើត':_lang==='en'?'Date of Birth':t('dobLabel')}</label><input type="date" id="lDob" oninput="calcAgeFromDob()"></div>
+      <div class="form-group"><label>${_lang==='km'?'អាយុ':_lang==='en'?'Age':t('ageLabel')}</label><input type="number" id="lAge" placeholder="${_lang==='km'?'ស្វ័យប្រវត្តិ':_lang==='en'?'Auto-calculated':_lang==='km'?'ស្វ័យប្រវត្តិ':_lang==='en'?'Auto':'自动计算'}" min="18" max="99" style="background:#f5f5f5"></div>
       <div class="form-group"><label>${t('shopName')}</label><input id="lShop" placeholder="${_lang==='km'?'ហាង':_lang==='en'?'Store':'店铺名称'}"></div>
       <div class="form-group"><label>${t('salesperson')}</label><input id="lSales" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'业务员'}"></div>
     </div>
@@ -1108,7 +1158,7 @@ function renderLoanAdd(){
       <div class="form-group span3"><label>${t('phoneNote')}</label><input id="lPhoneNote" placeholder="${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Screen condition, scratches, etc.':'屏幕状态、划痕等备注'}"></div>
     </div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
-      <div style="font-size:12px;color:var(--gray);font-weight:600;margin-bottom:10px">👥 ${_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':'紧急联系人'}</div>
+      <div style="font-size:12px;color:var(--gray);font-weight:600;margin-bottom:10px">👥 ${_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':'紧急联系人'}</div>
       <div class="form-grid">
         <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ១ — ឈ្មោះ':_lang==='en'?'Contact 1 — Name':'紧急联系人1 — 姓名'}</label><input id="lEmg1Name" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'姓名'}"></div>
         <div class="form-group"><label>${_lang==='km'?'ទំនាក់ទំនង ១ — ទូរស័ព្ទ':_lang==='en'?'Contact 1 — Phone':'紧急联系人1 — 电话'}</label><input id="lEmg1Phone" placeholder="${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'联系电话'}" type="tel"></div>
@@ -1129,7 +1179,7 @@ function renderLoanAdd(){
       <div class="form-group"><label>${t('loanAmount')}</label>
         <input type="number" id="lAmount" placeholder="0.00" step="0.01" oninput="calcLoan()">
       </div>
-      <div class="form-group"><label>${_lang==='km'?'ចំនួនប្រាក់បញ្ចេញជាក់ស្តែង ($)':_lang==='en'?'Actual Disbursement ($)':'实际放款金额 ($)'}</label>
+      <div class="form-group"><label>${_lang==='km'?'ចំនួនប្រាក់បញ្ចេញជាក់ស្តែង ($)':_lang==='en'?'Actual Disbursement ($)':_lang==='km'?'ចំនួនប្រាក់ ($)':_lang==='en'?'Actual Disbursement ($)':'实际放款金额 ($)'}</label>
         <input type="number" id="lActualAmount" placeholder="0.00" step="0.01" style="font-weight:700;color:var(--amber)">
       </div>
       <div class="form-group"><label>${_lang==='km'?'ប្រាក់ទូទាត់ប្រចាំខែ ($)':_lang==='en'?'Monthly Payment ($)':'每月还款金额 ($)'} <span style="font-size:10px;color:var(--muted);font-weight:400">${_lang==='km'?'(ការប្រាក់+ដើមទុន)':_lang==='en'?'(interest+principal)':'（利息+本金）'}</span></label>
@@ -1141,7 +1191,7 @@ function renderLoanAdd(){
           ${[1,2,3,4,5,6,9,12].map(p=>`<option value="${p}" ${p===3?'selected':''}>${p} ${t('period')}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>${t('firstDue')} <span style="font-size:10px;color:var(--muted);font-weight:400">${_lang==='km'?'(ស្វ័យប្រវត្តិ)':_lang==='en'?'(auto)':'(自动)'}</span></label><input type="date" id="lFirstDue"></div>
+      <div class="form-group"><label>${t('firstDue')} <span style="font-size:10px;color:var(--muted);font-weight:400">${_lang==='km'?'(ស្វ័យប្រវត្តិ)':_lang==='en'?'(auto)':_lang==='km'?'(ស្វ័យប្រវត្តិ)':_lang==='en'?'(auto)':'(自动)'}</span></label><input type="date" id="lFirstDue"></div>
     </div>
     <div style="background:#e3f2fd;border-radius:8px;padding:14px;margin-top:12px">
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
@@ -1153,33 +1203,33 @@ function renderLoanAdd(){
     </div>
     <div class="form-grid" style="margin-top:12px">
       <div class="form-group">
-        <label>${_lang==='km'?'ប្រភេទការប្រាក់':_lang==='en'?'Interest Type':'利息类型'}</label>
+        <label>${_lang==='km'?'ប្រភេទការប្រាក់':_lang==='en'?'Interest Type':t('interestType')}</label>
         <select id="lInterestType" onchange="onInterestTypeChange()">
-          <option value="normal">${_lang==='km'?'ធម្មតា (11.5%)':_lang==='en'?'Normal (11.5%)':'正常利息 (11.5%)'}</option>
-          <option value="reduced">${_lang==='km'?'បញ្ចុះការប្រាក់':_lang==='en'?'Reduced Rate':'降息订单'}</option>
-          <option value="referral">${_lang==='km'?'បញ្ជូន':_lang==='en'?'Referral':'转介绍'}</option>
+          <option value="normal">${_lang==='km'?'ធម្មតា (11.5%)':_lang==='en'?'Normal (11.5%)':t('interestNormal')}</option>
+          <option value="reduced">${_lang==='km'?'បញ្ចុះការប្រាក់':_lang==='en'?'Reduced Rate':t('interestReduced')}</option>
+          <option value="referral">${_lang==='km'?'បញ្ជូន':_lang==='en'?'Referral':_lang==='km'?'ណែនាំ':_lang==='en'?'Referral':t('interestReferral')}</option>
         </select>
       </div>
       <div class="form-group" id="reducedRateGroup" style="display:none">
-        <label>${_lang==='km'?'អត្រាការប្រាក់ជាក់ស្តែង (%)':_lang==='en'?'Actual Monthly Rate (%)':'实际月息 (%) 最低8.5%'}</label>
+        <label>${_lang==='km'?'អត្រាការប្រាក់ជាក់ស្តែង (%)':_lang==='en'?'Actual Monthly Rate (%)':_lang==='km'?'អត្រាការប្រាក់ ($) យ៉ាងតិច 8.5%':_lang==='en'?'Actual Rate (%) Min 8.5%':'实际月息 (%) 最低8.5%'}</label>
         <input type="number" id="lReducedRate" placeholder="8.5" min="8.5" max="11.4" step="0.1" style="color:var(--orange);font-weight:700">
       </div>
       <div class="form-group span3" id="referralGroup" style="display:none">
         <div class="form-grid">
           <div class="form-group">
-            <label>${_lang==='km'?'ប្រភេទអ្នកណែនាំ':_lang==='en'?'Referrer Type':'推荐人类型'}</label>
+            <label>${_lang==='km'?'ប្រភេទអ្នកណែនាំ':_lang==='en'?'Referrer Type':t('referralType')}</label>
             <select id="lReferralType">
-              <option value="customer">${_lang==='km'?'អតិថិជន':_lang==='en'?'Customer':'客户'}</option>
-              <option value="staff">${_lang==='km'?'បុគ្គលិក':_lang==='en'?'Staff':'内部员工'}</option>
+              <option value="customer">${_lang==='km'?'អតិថិជន':_lang==='en'?'Customer':t('referralCustomer')}</option>
+              <option value="staff">${_lang==='km'?'បុគ្គលិក':_lang==='en'?'Staff':t('referralStaff')}</option>
             </select>
           </div>
           <div class="form-group">
-            <label>${_lang==='km'?'ឈ្មោះអ្នកណែនាំ':_lang==='en'?'Referrer Name':'推荐人姓名'}</label>
+            <label>${_lang==='km'?'ឈ្មោះអ្នកណែនាំ':_lang==='en'?'Referrer Name':t('referralName')}</label>
             <input id="lReferralName" placeholder="${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Name':'推荐人全名'}">
           </div>
         </div>
       </div>
-      <div class="form-group span3"><label>${t('remarks')}</label><input id="lNote" placeholder="${_lang==='km'?'ស្រេចចិត្ត':_lang==='en'?'Optional':'可选备注'}"></div>
+      <div class="form-group span3"><label>${t('remarks')}</label><input id="lNote" placeholder="${_lang==='km'?'ស្រេចចិត្ត':_lang==='en'?'Optional':_lang==='km'?'ស្រេចចិត្ត':_lang==='en'?'Optional':'可选备注'}"></div>
     </div>
     <div class="card" style="background:#fafafa;border:1px solid #e0e0e0;margin-top:4px;padding:16px">
       <div style="font-size:13px;font-weight:700;color:#333;margin-bottom:14px">📎 客户材料 <span style="font-size:11px;font-weight:400;color:var(--muted)">（选填，可保存后补传）</span></div>
@@ -1325,7 +1375,7 @@ window.submitLoan=async function(){
 
   // ── 同名客户检查：进行中的合同不能有相同名字 ──
   const existLoan=(DB_get('loans')||[]).find(l=>
-    l.status==='进行中' &&
+    l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中' &&
     (l.customer||'').trim().toLowerCase()===cust.toLowerCase()
   );
   if(existLoan){
@@ -1383,7 +1433,7 @@ window.submitLoan=async function(){
     phoneCondition:cond,
     phoneImei:document.getElementById('lImei')?.value?.trim()||'',
     phoneNote:document.getElementById('lPhoneNote')?.value?.trim()||'',
-    lockStatus:'未锁',
+    lockStatus:_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁',
     emgContact1:{name:document.getElementById('lEmg1Name')?.value?.trim()||'',phone:document.getElementById('lEmg1Phone')?.value?.trim()||'',relation:document.getElementById('lEmg1Rel')?.value?.trim()||''},
     emgContact2:{name:document.getElementById('lEmg2Name')?.value?.trim()||'',phone:document.getElementById('lEmg2Phone')?.value?.trim()||'',relation:document.getElementById('lEmg2Rel')?.value?.trim()||''},
     emgContact3:{name:document.getElementById('lEmg3Name')?.value?.trim()||'',phone:document.getElementById('lEmg3Phone')?.value?.trim()||'',relation:document.getElementById('lEmg3Rel')?.value?.trim()||''},
@@ -1397,7 +1447,7 @@ window.submitLoan=async function(){
     reducedRate:document.getElementById('lInterestType')?.value==='reduced'?(+(document.getElementById('lReducedRate')?.value||0)):null,
     referralType:document.getElementById('lInterestType')?.value==='referral'?(document.getElementById('lReferralType')?.value||''):null,
     referralName:document.getElementById('lInterestType')?.value==='referral'?(document.getElementById('lReferralName')?.value?.trim()||''):null,
-    schedule,status:'进行中',extensions:[]
+    schedule,status:_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中',extensions:[]
   };
   const loans=DB_get('loans')||[];
   loans.push(loan); DB_set('loans',loans);
@@ -1514,7 +1564,7 @@ function buildLoanTable(loans){
   const sortedDates=Object.keys(groups).sort().reverse();
   const thead=`<tr><th>${t('colNo')}</th><th>${_lang==='km'?'លេខសន្យា':_lang==='en'?'Contract#':'合同编号'}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
       <th>${t('colLoanAmt')}</th><th>${_lang==='km'?'ប្រាក់/ខែ':_lang==='en'?'Monthly Pay':'月还款额'}</th>
-      <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':'锁机'}</th><th>${_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑白名单'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>`;
+      <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'}</th><th>${_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑白名单'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>`;
   return sortedDates.map(date=>{
     const dayLoans=groups[date];
     const uid='day_'+date.replace(/-/g,'');
@@ -1531,7 +1581,7 @@ function buildLoanTable(loans){
           ${thead}
           ${dayLoans.map(l=>{
       const paid=l.schedule.filter(p=>p.paid).length;
-      const isOverdue=l.status==='进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
+      const isOverdue=l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中'&&l.schedule.some(p=>!p.paid&&p.dueDate<td);
       const condColors={cond100:'cond-new',cond95:'cond-9',cond9:'cond-9',cond8:'cond-8',cond7:'cond-7'};
       return `<tr>
         <td><a href="#" onclick="viewLoan(${l.id});return false" class="text-blue fw700">#${l.id}</a></td>
@@ -1557,9 +1607,9 @@ function buildLoanTable(loans){
         </td>
         <td>
           ${(_currentUser&&_currentUser.role==='readonly')
-            ? `<span style="font-size:12px;color:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};font-weight:600">${(l.lockStatus||'未锁')==='锁机'?'🔒 锁机':'🔓 未锁'}</span>`
-            : `<button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||'未锁')==='锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
-            ${(l.lockStatus||'未锁')==='锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
+            ? `<span style="font-size:12px;color:${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'#c62828':'#2e7d32'};font-weight:600">${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'🔒 锁机':'🔓 未锁'}</span>`
+            : `<button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
+            ${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
           </button>`}
         </td>
         <td>
@@ -1576,7 +1626,7 @@ function buildLoanTable(loans){
         </td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="viewLoan(${l.id})">${t('viewSchedule')}</button>
-          ${(_currentUser&&_currentUser.role==='readonly') ? '' : canEditLoan(l) ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
+          ${(_currentUser&&_currentUser.role==='readonly') ? '' : canEditLoan(l) ? `<button class="btn btn-primary btn-sm" onclick="editLoan(${l.id})" style="margin-left:4px">✏️ ${_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':_lang==='km'?'កែប្រែ':_lang==='en'?'Edit':'编辑'}</button>` : ''}
           ${isManager() ? `<button class="btn btn-danger btn-sm" onclick="deleteLoan(${l.id})" style="margin-left:4px">${t('deleteBtn')}</button>` : ''}
         </td>
       </tr>`;
@@ -1619,28 +1669,28 @@ window.viewLoan=function(id){
         <div class="fw700 text-amber" style="font-size:16px">${fmt(l.loanAmount)}</div>
         <div style="font-size:12px">${t('monthlyInterest')} <b>${fmt(l.monthlyInterest)}</b> / ${t('period')}</div>
         <div style="font-size:12px">${t('totalInterest')} <b>${fmt(l.totalInterest)}</b></div>
-        <div style="font-size:12px">${l.monthlyRate}% ${_lang==='en'?'monthly rate':'月利率'}</div>
-        ${l.actualAmount?`<div style="font-size:12px;color:var(--amber);font-weight:700;margin-top:4px">💵 ${_lang==='en'?'Actual Disbursement':'实际放款'}: ${fmt(l.actualAmount)}</div>`:''}
+        <div style="font-size:12px">${l.monthlyRate}% ${_lang==='en'?'monthly rate':_lang==='km'?'អត្រា/ខែ':_lang==='en'?'Monthly Rate':'月利率'}</div>
+        ${l.actualAmount?`<div style="font-size:12px;color:var(--amber);font-weight:700;margin-top:4px">💵 ${_lang==='en'?'Actual Disbursement':_lang==='km'?'ការបញ្ចេញប្រាក់':_lang==='en'?'Actual Disbursement':'实际放款'}: ${fmt(l.actualAmount)}</div>`:''}
         <div style="margin-top:6px">
           ${l.interestType==='reduced'?`<span style="background:#ff6f00;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">↓ 降息 ${l.reducedRate||''}%</span>`:''}
           ${l.interestType==='referral'?`<span style="background:#7b1fa2;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">🤝 转介绍</span>`:''}
           ${l.interestType==='normal'||!l.interestType?`<span style="background:#1b5e20;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">✅ 正常利息</span>`:''}
         </div>
-        ${l.interestType==='referral'&&l.referralName?`<div style="font-size:12px;color:#7b1fa2;font-weight:600;margin-top:4px">👤 推荐人: ${esc(l.referralName)} (${l.referralType==='staff'?'员工':'客户'})</div>`:''}
+        ${l.interestType==='referral'&&l.referralName?`<div style="font-size:12px;color:#7b1fa2;font-weight:600;margin-top:4px">👤 推荐人: ${esc(l.referralName)} (${l.referralType==='staff'?'员工':t('referralCustomer')})</div>`:''}
       </div>
     </div>
     <div style="background:#f3e5f5;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #9c27b0;font-size:12px">
-      <div style="font-size:11px;color:#7b1fa2;font-weight:700;margin-bottom:8px">👤 ${_lang==='en'?'Customer Info':'客户信息'}</div>
+      <div style="font-size:11px;color:#7b1fa2;font-weight:700;margin-bottom:8px">👤 ${_lang==='en'?'Customer Info':_lang==='km'?'ព័ត៌មានអតិថិជន':_lang==='en'?'Customer Info':'客户信息'}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
         <div><div style="color:var(--muted);font-size:11px">${_lang==='en'?'Full Name':'客户姓名'}</div><div class="fw700">${esc(l.customer)}</div></div>
         <div><div style="color:var(--muted);font-size:11px">${_lang==='en'?'Phone':'联系电话'}</div><div class="fw700">${esc(l.customerPhone||'—')}</div></div>
         <div><div style="color:var(--muted);font-size:11px">${_lang==='en'?'ID Number':'证件号'}</div><div class="fw700">${esc(l.customerId||l.idNumber||'—')}</div></div>
-        ${l.address?`<div style="grid-column:span 3"><div style="color:var(--muted);font-size:11px">${_lang==='en'?'Address':'地址'}</div><div>${esc(l.address)}</div></div>`:''}
+        ${l.address?`<div style="grid-column:span 3"><div style="color:var(--muted);font-size:11px">${_lang==='en'?'Address':_lang==='km'?'អាសយដ្ឋាន':_lang==='en'?'Address':'地址'}</div><div>${esc(l.address)}</div></div>`:''}
       </div>
     </div>
     ${l.phoneNote||l.note?`<div class="alert alert-blue" style="margin-bottom:10px">${esc(l.phoneNote||'')} ${l.note?'· '+esc(l.note):''}</div>`:''}
     <div style="background:#fff8e1;border-radius:8px;padding:12px;margin-bottom:12px;border-left:3px solid var(--orange)">
-      <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:8px">👥 ${_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':'紧急联系人'}</div>
+      <div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:8px">👥 ${_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':_lang==='km'?'ទំនាក់ទំនងបន្ទាន់':_lang==='en'?'Emergency Contacts':'紧急联系人'}</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">
         ${[l.emgContact1,l.emgContact2,l.emgContact3].map((c,i)=>c&&c.name
           ?`<div style="background:#fff;border-radius:6px;padding:8px;border:1px solid #ffe082">
@@ -1672,7 +1722,7 @@ window.viewLoan=function(id){
           <td>${p.paid?fmt(p.paidPrincipal):fmt(p.principalDue)}</td>
           <td>${p.paid?fmt(p.paidInterest):fmt(p.interestDue)}</td>
           <td>${p.penalty>0?`<span class="text-red">${fmt(p.penalty)}</span>`:'—'}</td>
-          <td>${p.paid?`<span class="badge badge-green">${p.paidDate}</span>`:isOv?`<span class="badge badge-red">${t('daysOverdue')} ${days} ${t('days')}</span>`:`<span class="badge badge-gray">${_lang==='km'?'រង់ចាំ':_lang==='en'?'Pending':'待还'}</span>`}</td>
+          <td>${p.paid?`<span class="badge badge-green">${p.paidDate}</span>`:isOv?`<span class="badge badge-red">${t('daysOverdue')} ${days} ${t('days')}</span>`:`<span class="badge badge-gray">${_lang==='km'?'រង់ចាំ':_lang==='en'?'Pending':_lang==='km'?'រង់ចាំ':_lang==='en'?'Pending':'待还'}</span>`}</td>
         </tr>`;
       }).join('')}
     </table></div>
@@ -1747,8 +1797,8 @@ window.deleteDoc=async function(loanId, docKey){
 window.toggleLockStatus=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
-  const cur=loans[li].lockStatus||'未锁';
-  loans[li].lockStatus=cur==='锁机'?'未锁':'锁机';
+  const cur=loans[li].lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁';
+  loans[li].lockStatus=cur===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁':_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机';
   DB_set('loans',loans);
   saveRecord('loans',loans[li]);
   filterLoans();
@@ -2015,7 +2065,7 @@ function renderPaymentAdd(){
     return `<div class="page-header"><div class="page-title">💰 ${t('paymentTitle')}</div></div>
     <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作还款</p></div></div>`;
   }
-  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const loans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('');
   const pays=(DB_get('payments')||[]).slice().reverse();
   return `
@@ -2054,7 +2104,7 @@ function renderPaymentAdd(){
 }
 window.filterPawnLoans=function(){
   const kw=(document.getElementById('pLoanSearch')?.value||'').trim().toLowerCase();
-  const loans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const loans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   const sel=document.getElementById('pLoan');
   const hint=document.getElementById('pLoanHint');
   const countEl=document.getElementById('pLoanSearchCount');
@@ -2132,13 +2182,13 @@ window.submitPayment=async function(){
   const pi=l.schedule.findIndex(p=>p.period===periodNo); if(pi<0) return;
   if(l.schedule[pi].paid){showMsg('payMsg',t('msgPeriodPaid'),'amber');return;}
   l.schedule[pi]={...l.schedule[pi],paid:true,paidDate:pDate,paidPrincipal:principal,paidInterest:interest,penalty};
-  if(l.schedule.every(p=>p.paid)) l.status='已结清';
+  if(l.schedule.every(p=>p.paid)) l.status=_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清';
   loans[li]=l; DB_set('loans',loans);
   const pays=DB_get('payments')||[];
   const payId=await getNextId('payments');
   pays.push({id:payId,loanId,customer:l.customer,period:periodNo,date:pDate,paidPrincipal:principal,paidInterest:interest,penalty});
   DB_set('payments',pays);
-  showMsg('payMsg','⏳ 正在保存收款记录...','');
+  showMsg('payMsg',_lang==='km'?'⏳ កំពុងរក្សាទុក...':_lang==='en'?'⏳ Saving...':'⏳ 正在保存收款记录...','');
   // 单条保存，不覆盖其他人数据
   const pay = pays[pays.length-1];
   const [lOk, pOk] = await Promise.all([
@@ -2186,7 +2236,7 @@ window.deletePayment=function(id){
     const pi=loans[li].schedule.findIndex(p=>p.period===pay.period);
     if(pi>=0){
       loans[li].schedule[pi]={...loans[li].schedule[pi],paid:false,paidDate:null,paidPrincipal:0,paidInterest:0,penalty:0};
-      if(loans[li].status==='已结清') loans[li].status='进行中';
+      if(loans[li].status===_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清') loans[li].status=_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中';
       DB_set('loans',loans);
     }
   }
@@ -2204,7 +2254,7 @@ function renderExtension(){
     <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作续期</p></div></div>`;
   }
   const minPaid={2:1,3:1,4:2,5:3,6:3};
-  const allLoans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const allLoans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
 
   // 生成选项时显示当前已还期数和是否满足条件
   const opts=allLoans.map(l=>{
@@ -2223,12 +2273,12 @@ function renderExtension(){
   </div>
   <div class="card" style="border-left:4px solid var(--purple)">
     <div style="background:#f3e5f5;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#6a1b9a">
-      <b>📋 续期条件：</b>借2-3期需还1期 · 借4期需还2期 · 借5-6期需还3期 · 已结清可重新借<br>
+      <b>📋 续期条件：</b>${_lang==='km'?'ខ្ចី2-3ខែ→1ខែ · ខ្ចី4ខែ→2ខែ · ខ្ចី5-6ខែ→3ខែ · បង់អស់→ខ្ចីបានទៀត':_lang==='en'?'2-3 periods: pay 1 · 4 periods: pay 2 · 5-6 periods: pay 3 · Settled: re-borrow':'借2-3期需还1期 · 借4期需还2期 · 借5-6期需还3期 · 已结清可重新借'}<br>
       <b>⚠️ 同名限制：</b>同一客户不能同时有两笔进行中的合同
     </div>
     <div class="form-grid">
       <div class="form-group span3"><label>${t('selectLoanExt')}</label>
-        <input id="extSearch" placeholder="🔍 输入客户姓名/合同号搜索..." oninput="filterExtLoan()" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;margin-bottom:6px;outline:none;box-sizing:border-box">
+        <input id="extSearch" placeholder="🔍 ${_lang==='km'?'ស្វែងរកឈ្មោះ/លេខ...':_lang==='en'?'Search name/contract...':'输入客户姓名/合同号搜索...'}" oninput="filterExtLoan()" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;margin-bottom:6px;outline:none;box-sizing:border-box">
         <select id="extLoan" onchange="loadExtLoan()" size="5" style="width:100%;border:1.5px solid var(--purple);border-radius:8px;padding:6px;font-size:13px;font-family:inherit;outline:none">${opts||`<option>${t('noRecord')}</option>`}</select>
       </div>
     </div>
@@ -2287,7 +2337,7 @@ function renderExtension(){
 window.filterExtLoan=function(){
   const q=(document.getElementById('extSearch')?.value||'').toLowerCase();
   const minPaid={2:1,3:1,4:2,5:3,6:3};
-  const allLoans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const allLoans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   const filtered=q?allLoans.filter(l=>
     (l.customer||'').toLowerCase().includes(q)||
     String(l.id).includes(q)||
@@ -2396,7 +2446,7 @@ window.submitExtension=async function(){
 
   // ── 限制2：同名客户不能同时在进行中 ──
   const custName=(l.customer||'').trim().toLowerCase();
-  const dupLoan=loans.find(x=>x.id!==id && x.status==='进行中' && (x.customer||'').trim().toLowerCase()===custName);
+  const dupLoan=loans.find(x=>x.id!==id && x.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中' && (x.customer||'').trim().toLowerCase()===custName);
   if(dupLoan){
     showMsg('extMsg',`❌ 客户 "${l.customer}" 已有进行中的合同 #${dupLoan.id}，不能同时续期！`,'red');
     return;
@@ -2425,7 +2475,7 @@ window.submitExtension=async function(){
     startDate=new Date(startDate); startDate.setMonth(startDate.getMonth()+1);
   }
   l.periods+=extPeriods;
-  l.status='进行中';
+  l.status=_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中';
   if(!l.extensions) l.extensions=[];
   l.extensions.push({date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   loans[li]=l; DB_set('loans',loans);
@@ -2457,7 +2507,7 @@ function renderStats(){
   const tInt=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const tP=pays.reduce((a,p)=>a+(+p.paidPrincipal||0),0);
   const tPen=pays.reduce((a,p)=>a+(+p.penalty||0),0);
-  const active=loans.filter(l=>l.status==='进行中');
+  const active=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   const pendingP=active.reduce((a,l)=>a+(+l.loanAmount-l.schedule.filter(p=>p.paid).reduce((b,p)=>b+(+p.paidPrincipal||0),0)),0);
   const byMonth={};
   pays.forEach(p=>{const m=p.date.slice(0,7);if(!byMonth[m])byMonth[m]={int:0,principal:0,penalty:0,count:0};
@@ -2503,7 +2553,7 @@ function renderBadDebt(){
 
   // 逾期天数计算
   function getOverdueDays(l){
-    if(l.status==='已结清') return 0;
+    if(l.status===_lang==='km'?'បានបិទ':_lang==='en'?'Settled':'已结清') return 0;
     let maxDays=0;
     (l.schedule||[]).forEach(p=>{
       if(!p.paid&&p.dueDate<td){
@@ -2523,7 +2573,7 @@ function renderBadDebt(){
   }
 
   // 所有逾期贷款
-  const overdueLoans=loans.filter(l=>l.status==='进行中'&&getOverdueDays(l)>0);
+  const overdueLoans=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中'&&getOverdueDays(l)>0);
   const total=overdueLoans.length;
   const totalAmt=overdueLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
 
@@ -2598,12 +2648,12 @@ function renderBadDebt(){
   function renderModel(){
     const modelMap={};
     overdueLoans.forEach(l=>{
-      const brand=(l.phoneBrand||'其他').trim();
+      const brand=(l.phoneBrand||t('apptSrcOther')).trim();
       const key=brand==='Apple'||brand.toLowerCase().includes('iphone')?'Apple iPhone':
                 brand==='Samsung'||brand.toLowerCase().includes('samsung')?'Samsung':
                 brand==='Oppo'||brand.toLowerCase().includes('oppo')?'Oppo':
                 brand==='Vivo'||brand.toLowerCase().includes('vivo')?'Vivo':
-                brand==='Xiaomi'||brand.toLowerCase().includes('xiaomi')?'Xiaomi':'其他';
+                brand==='Xiaomi'||brand.toLowerCase().includes('xiaomi')?'Xiaomi':t('apptSrcOther');
       if(!modelMap[key]) modelMap[key]={cnt:0,amt:0};
       modelMap[key].cnt++; modelMap[key].amt+=(+l.loanAmount||0);
     });
@@ -2653,7 +2703,7 @@ function renderBadDebt(){
   <div class="stats-grid">
     <div class="stat-card red"><span class="stat-icon">⚠️</span><div class="stat-label">逾期总笔数</div><div class="stat-value">${total}</div><div class="stat-sub">进行中贷款</div></div>
     <div class="stat-card red"><span class="stat-icon">💸</span><div class="stat-label">逾期总金额</div><div class="stat-value">${fmt(totalAmt)}</div></div>
-    <div class="stat-card amber"><span class="stat-icon">📊</span><div class="stat-label">逾期率</div><div class="stat-value">${loans.filter(l=>l.status==='进行中').length>0?((total/loans.filter(l=>l.status==='进行中').length)*100).toFixed(1):0}%</div><div class="stat-sub">占进行中贷款</div></div>
+    <div class="stat-card amber"><span class="stat-icon">📊</span><div class="stat-label">逾期率</div><div class="stat-value">${loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').length>0?((total/loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').length)*100).toFixed(1):0}%</div><div class="stat-sub">占进行中贷款</div></div>
     <div class="stat-card purple"><span class="stat-icon">🚨</span><div class="stat-label">坏账金额</div><div class="stat-value">${fmt(levelAmt['坏账'])}</div><div class="stat-sub">逾期90天以上</div></div>
   </div>
 
@@ -2703,7 +2753,7 @@ function renderFinanceSummary(){
   const td=today(); const m=td.slice(0,7);
 
   // 基础数据
-  const activeLoans=loans.filter(l=>l.status==='进行中');
+  const activeLoans=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   const totalInLoan=activeLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
   const totalDisbursed=loans.reduce((a,l)=>a+(+l.loanAmount||0),0);
   const totalInterestCollected=pays.reduce((a,p)=>a+(+p.paidInterest||0),0);
@@ -2814,7 +2864,7 @@ function renderFinancePerformance(){
     if(!staffMap[key]) staffMap[key]={name:key,total:0,amt:0,active:0,activeAmt:0,interest:0,mAmt:0,mCount:0};
     staffMap[key].total++;
     staffMap[key].amt+=(+l.loanAmount||0);
-    if(l.status==='进行中'){staffMap[key].active++;staffMap[key].activeAmt+=(+l.loanAmount||0);}
+    if(l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中'){staffMap[key].active++;staffMap[key].activeAmt+=(+l.loanAmount||0);}
     if(l.date.slice(0,7)===m){staffMap[key].mCount++;staffMap[key].mAmt+=(+l.loanAmount||0);}
   });
   // 收息统计
@@ -2867,7 +2917,7 @@ function renderFinanceMonthly(){
 
   // 每月应收利息 = 该月进行中合同的月利息合计
   // 用贷款日期来判断该月有哪些合同在进行中（简化：用所有active合同计算当月应收）
-  const activeLoans=loans.filter(l=>l.status==='进行中');
+  const activeLoans=loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   const currentMonthlyReceivable=activeLoans.reduce((a,l)=>a+(+l.monthlyInterest||0),0);
 
   const rows=months.map(m=>{
@@ -2929,7 +2979,7 @@ function renderFinanceNormal(){
   const mProfit=mInt+mPen-mExp;
   const tInt=allPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const tExp=expenses.reduce((a,e)=>a+(+e.amount),0);
-  const active=normalLoans.filter(l=>l.status==='进行中');
+  const active=normalLoans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   return `
   <div class="stats-grid">
     <div class="stat-card blue"><span class="stat-icon">📋</span><div class="stat-label">本月新增</div><div class="stat-value">${mLoans.length}</div><div class="stat-sub">${fmt(mLoans.reduce((a,l)=>a+(+l.loanAmount),0))}</div></div>
@@ -2976,7 +3026,7 @@ function renderFinanceReduced(){
   const mPays=allPays.filter(p=>p.date.slice(0,7)===m);
   const mInt=mPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
   const tInt=allPays.reduce((a,p)=>a+(+p.paidInterest||0),0);
-  const active=reducedLoans.filter(l=>l.status==='进行中');
+  const active=reducedLoans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
   // 统计少收利息（对比11.5%标准）
   const lostInterest=reducedLoans.reduce((a,l)=>{
     const stdMonthly=l.loanAmount*0.115;
@@ -3176,7 +3226,7 @@ function renderAppointment(){
       const sorted=list.slice().sort((a,b)=>(a.arrivalDate+a.arrivalTime)<(b.arrivalDate+b.arrivalTime)?1:-1);
       if(!sorted.length) return `<div class="empty-state"><div class="ei">📅</div><p>${t('noRecord')}</p></div>`;
       return `<div class="table-wrap"><table>
-        <tr><th>#</th><th>${_lang==='km'?'អតិថិជន':_lang==='en'?'Customer':'客户'}</th><th>${_lang==='km'?'ទំនាក់ទំនង':_lang==='en'?'Contact':'联系方式'}</th><th>${_lang==='km'?'ប្រភព':_lang==='en'?'Source':'来源'}</th><th>${_lang==='km'?'ម៉ូដែល':_lang==='en'?'Model':'手机型号'}</th><th>${_lang==='km'?'ពេលវេលា':_lang==='en'?'Visit Time':'到店时间'}</th><th>${_lang==='km'?'ទីតាំង':_lang==='en'?'Location':'地点'}</th><th>${_lang==='km'?'បុគ្គលិក':_lang==='en'?'Staff':'客服'}</th><th>${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Status':'状态'}</th><th>${t('apptFailReason')}</th><th>${_lang==='km'?'សកម្មភាព':_lang==='en'?'Action':'操作'}</th></tr>
+        <tr><th>#</th><th>${_lang==='km'?'អតិថិជន':_lang==='en'?'Customer':t('referralCustomer')}</th><th>${_lang==='km'?'ទំនាក់ទំនង':_lang==='en'?'Contact':'联系方式'}</th><th>${_lang==='km'?'ប្រភព':_lang==='en'?'Source':'来源'}</th><th>${_lang==='km'?'ម៉ូដែល':_lang==='en'?'Model':'手机型号'}</th><th>${_lang==='km'?'ពេលវេលា':_lang==='en'?'Visit Time':'到店时间'}</th><th>${_lang==='km'?'ទីតាំង':_lang==='en'?'Location':'地点'}</th><th>${_lang==='km'?'បុគ្គលិក':_lang==='en'?'Staff':'客服'}</th><th>${_lang==='km'?'ស្ថានភាព':_lang==='en'?'Status':'状态'}</th><th>${t('apptFailReason')}</th><th>${_lang==='km'?'សកម្មភាព':_lang==='en'?'Action':'操作'}</th></tr>
         ${sorted.map(a=>`<tr>
           <td style="font-size:12px;color:var(--muted)">${a.id}</td>
           <td class="fw700">${esc(a.customer)}</td>
@@ -3314,7 +3364,7 @@ function renderOverdue(){
   const loans=DB_get('loans')||[];
   const td=today();
   const items=[];
-  loans.filter(l=>l.status==='进行中').forEach(l=>{
+  loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').forEach(l=>{
     l.schedule.filter(p=>!p.paid&&p.dueDate<td).forEach(p=>{
       items.push({l,p,days:daysDiff(p.dueDate,td)});
     });
@@ -3346,7 +3396,7 @@ function renderTomorrow(){
   const tom=new Date(td); tom.setDate(tom.getDate()+1);
   const tomorrow=tom.toISOString().slice(0,10);
   const items=[];
-  loans.filter(l=>l.status==='进行中').forEach(l=>{
+  loans.filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中').forEach(l=>{
     l.schedule.filter(p=>!p.paid&&p.dueDate===tomorrow).forEach(p=>items.push({l,p}));
   });
   return `
@@ -3366,7 +3416,7 @@ function renderTomorrow(){
 function renderExpenses(){
   const expenses=DB_get('expenses')||[];
   const total=expenses.reduce((a,e)=>a+(+e.amount),0);
-  const cats=[_lang==='km'?'ថ្លៃជួល':'房租',_lang==='km'?'ប្រាក់ខែ':'员工工资','税费',_lang==='km'?'ភ្លើង/ទឹក':'水电','通讯费','交通费',_lang==='km'?'អាហារ':'餐饮','维修','广告','办公用品',_lang==='km'?'ផ្សេងទៀត':'其他'];
+  const cats=[_lang==='km'?'ថ្លៃជួល':'房租',_lang==='km'?'ប្រាក់ខែ':'员工工资','税费',_lang==='km'?'ភ្លើង/ទឹក':'水电','通讯费','交通费',_lang==='km'?'អាហារ':'餐饮','维修','广告','办公用品',_lang==='km'?'ផ្សេងទៀត':t('apptSrcOther')];
   return `
   <div class="page-header"><div class="page-title">🧾 ${t('expensesTitle')}</div></div>
   <div class="card">
@@ -3447,9 +3497,9 @@ function renderCompany(){
   </div>` : ''}
   <div class="card">
     <div class="form-grid">
-      <div class="form-group"><label>${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Company Name':'公司名称'}</label><input id="coName" value="${esc(co.name||'')}"></div>
-      <div class="form-group"><label>${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'电话'}</label><input id="coPhone" value="${esc(co.phone||'')}"></div>
-      <div class="form-group"><label>${_lang==='km'?'អាសយដ្ឋាន':_lang==='en'?'Address':'地址'}</label><input id="coAddr" value="${esc(co.address||'')}"></div>
+      <div class="form-group"><label>${_lang==='km'?'ឈ្មោះ':_lang==='en'?'Company Name':_lang==='km'?'ឈ្មោះក្រុមហ៊ុន':_lang==='en'?'Company Name':'公司名称'}</label><input id="coName" value="${esc(co.name||'')}"></div>
+      <div class="form-group"><label>${_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':_lang==='km'?'ទូរស័ព្ទ':_lang==='en'?'Phone':'电话'}</label><input id="coPhone" value="${esc(co.phone||'')}"></div>
+      <div class="form-group"><label>${_lang==='km'?'អាសយដ្ឋាន':_lang==='en'?'Address':_lang==='km'?'អាសយដ្ឋាន':_lang==='en'?'Address':'地址'}</label><input id="coAddr" value="${esc(co.address||'')}"></div>
     </div>
     <div class="btn-row"><button class="btn btn-success" onclick="saveCompany()">💾 ${t('save')}</button></div>
     <div id="coMsg" style="margin-top:10px"></div>
