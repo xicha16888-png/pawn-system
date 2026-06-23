@@ -1961,7 +1961,9 @@ window.deleteLoan=function(id){
   if(pwd!=='guo'){ alert(_lang==='zh'?'密码错误，无法删除！':_lang==='en'?'Wrong password!':'ពាក្យសម្ងាត់មិនត្រូវ!'); return; }
   if(!confirm(`${t('deleteBtn')} #${id} — ${l.customer}?`)) return;
   DB_set('loans',loans.filter(x=>x.id!==id));
-  saveDB(); // 立即保存
+  // 同步删除服务器记录
+  fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'loans',id})});
+  saveDB();
   filterLoans();
 };
 
@@ -3198,6 +3200,7 @@ window.deleteAppointment=function(id){
   if(!confirm('确定删除这条预约记录？')) return;
   const appts=(DB_get('appointments')||[]).filter(a=>a.id!==id);
   DB_set('appointments',appts);
+  fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'appointments',id})});
   saveDB();
   nav('appointment');
 };
@@ -3307,6 +3310,7 @@ window.submitExpense=function(){
 window.deleteExpense=function(id){
   if(!confirm(t('deleteBtn')+'?')) return;
   DB_set('expenses',(DB_get('expenses')||[]).filter(e=>e.id!==id));
+  fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'expenses',id})});
   nav('expenses');
 };
 
