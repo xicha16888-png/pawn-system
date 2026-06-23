@@ -701,6 +701,36 @@ async function loadDB(){
     return {ok:true};
   }catch(e){ return {ok:false,reason:e.name==='AbortError'?'Timeout':e.message}; }
 }
+// 保存单条记录到服务器（防并发覆盖）
+async function saveRecord(table, record){
+  try{
+    const res=await fetch('/api/save-record',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({table,record}),
+      signal:AbortSignal.timeout(10000)
+    });
+    const json=await res.json();
+    if(!json.ok) console.error('saveRecord error:',json.error);
+    return json.ok;
+  }catch(e){
+    console.error('saveRecord failed:',e.message);
+    return false;
+  }
+}
+
+// 保存config到服务器
+async function saveConfig(key, value){
+  try{
+    await fetch('/api/save-config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key,value}),
+      signal:AbortSignal.timeout(10000)
+    });
+  }catch(e){ console.error('saveConfig failed:',e.message); }
+}
+
 async function saveDB(){
   if(!_dbReady||!_db) return;
   setSyncStatus('syncing');
@@ -1280,7 +1310,7 @@ window.calcLoanFromPayment=function(){
   set('cTotalRepay',tRepay>=0?tRepay:0);
 };
 
-window.submitLoan=function(){
+window.submitLoan=async function(){
   if(_currentUser&&(_currentUser.role==='readonly')){alert('无权限：只读账户不能录入合同');return;}
   const cust=document.getElementById('lCust')?.value?.trim();
   if(!cust){showMsg('loanMsg',t('msgFillCustomer'),'red');return;}
@@ -1352,19 +1382,22 @@ window.submitLoan=function(){
   };
   const loans=DB_get('loans')||[];
   loans.push(loan); DB_set('loans',loans);
+  // 保存nextId
+  saveConfig('nextId', loan.id+1);
   // 强制保存，等待结果
   const saveBtn = document.querySelector('button[onclick="submitLoan()"]');
   if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='⏳ 保存中...'; }
   showMsg('loanMsg','⏳ 正在保存到服务器...','');
-  saveDB().then(async ()=>{
-    if(!_dirty){
+  // 直接保存单条记录，不覆盖其他人的数据
+  const saveOk = await saveRecord('loans', loan);
+  if(saveOk){
       showMsg('loanMsg',`✅ 合同 #${loan.id} 保存成功！`,'green');
       if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
       // 如果是从预约单转单过来，自动更新预约单状态为已成交
       if(window._fromApptId){
         const appts=DB_get('appointments')||[];
         const a=appts.find(x=>x.id===window._fromApptId);
-        if(a){ a.status='已成交'; DB_set('appointments',appts); }
+        if(a){ a.status='已成交'; DB_set('appointments',appts); saveRecord('appointments',a); }
         window._fromApptId=null;
       }
       // 上传待传图片
@@ -1378,7 +1411,6 @@ window.submitLoan=function(){
             const res=await fetch('/api/upload-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loanId:loan.id,docKey,base64:docs[docKey]})});
             const json=await res.json();
             if(json.ok){
-              // 更新本地数据
               const loans2=DB_get('loans')||[];
               const l2=loans2.find(x=>x.id===loan.id);
               if(l2){if(!l2.documents)l2.documents={};l2.documents[docKey]=json.url;DB_set('loans',loans2);}
@@ -1386,16 +1418,18 @@ window.submitLoan=function(){
             } else { failed++; }
           } catch(e){ failed++; }
         }
-        // ⚠️ 关键：图片URL更新后必须再次saveDB同步回Supabase
-        if(uploaded>0) await saveDB();
+        if(uploaded>0){
+          const loans2=DB_get('loans')||[];
+          const l2=loans2.find(x=>x.id===loan.id);
+          if(l2) await saveRecord('loans',l2);
+        }
         if(failed===0) showMsg('loanMsg',`✅ 合同 #${loan.id} 保存成功！材料已上传 ${uploaded} 张 📎`,'green');
         else showMsg('loanMsg',`✅ 合同已保存，材料上传 ${uploaded} 成功 / ${failed} 失败（可进合同详情补传）`,'green');
       }
-    } else {
-      showMsg('loanMsg',`❌ 保存失败！请点击"手动备份"保存数据后重试`,'red');
+  } else {
+      showMsg('loanMsg',`❌ 保存失败！请重试`,'red');
       if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=t('saveLoan'); }
-    }
-  });
+  }  
   ['lContractNo','lCust','lPhone','lId','lShop','lSales','lBrand','lModel','lColor','lImei','lPhoneNote','lNote','lEmg1Name','lEmg1Phone','lEmg1Rel','lEmg2Name','lEmg2Phone','lEmg2Rel','lEmg3Name','lEmg3Phone','lEmg3Rel','lReferralName','lReducedRate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});;
   // 清空材料预览UI（但不清空_pendingDocs，让上传流程自己清）
   const _docsToUpload=Object.assign({},window._pendingDocs);
@@ -1935,6 +1969,7 @@ window.saveEditLoan=function(){
   }
 
   DB_set('loans', loans);
+  saveRecord('loans', loans[idx]);
   closeEditModal();
 
   // 刷新列表
@@ -2076,7 +2111,7 @@ window.calcPayTotal=function(){
   const tot=document.getElementById('pTotal');
   if(tot) tot.value=fmt(p+i+pe);
 };
-window.submitPayment=function(){
+window.submitPayment=async function(){
   if(_currentUser&&_currentUser.role==='readonly'){alert('无权限：只读账户不能操作还款');return;}
   const loanId=+(document.getElementById('pLoan')?.value||0);
   if(!loanId){showMsg('payMsg',t('msgSelectLoan'),'red');return;}
@@ -2098,13 +2133,17 @@ window.submitPayment=function(){
   pays.push({id:newId(),loanId,customer:l.customer,period:periodNo,date:pDate,paidPrincipal:principal,paidInterest:interest,penalty});
   DB_set('payments',pays);
   showMsg('payMsg','⏳ 正在保存收款记录...','');
-  saveDB().then(()=>{
-    if(!_dirty){
-      showMsg('payMsg',`✅ 收款成功！#${loanId} ${l.customer} — ${t('period')} ${periodNo} · ${fmt(principal+interest+penalty)}`,'green');
-    } else {
-      showMsg('payMsg','❌ 保存失败！请截图记录后点击手动备份','red');
-    }
-  });
+  // 单条保存，不覆盖其他人数据
+  const pay = pays[pays.length-1];
+  const [lOk, pOk] = await Promise.all([
+    saveRecord('loans', l),
+    saveRecord('payments', pay)
+  ]);
+  if(lOk && pOk){
+    showMsg('payMsg',`✅ 收款成功！#${loanId} ${l.customer} — ${t('period')} ${periodNo} · ${fmt(principal+interest+penalty)}`,'green');
+  } else {
+    showMsg('payMsg','❌ 保存失败！请重试','red');
+  }
   document.getElementById('pPenalty').value='0';
   document.getElementById('pTotal').value='';
   loadLoanPeriods(); updateBadges();
@@ -3141,7 +3180,7 @@ window.submitAppointment=function(){
   };
   appts.push(appt);
   DB_set('appointments',appts);
-  saveDB();
+  saveRecord('appointments',appt);
   showMsg('apptMsg',_lang==='km'?'✅ បានរក្សាទុក!':_lang==='en'?'✅ Appointment saved!':'✅ 预约单已保存！','green');
   setTimeout(()=>{window._apptTab='list';nav('appointment');},800);
 };
@@ -3175,7 +3214,7 @@ window.confirmFailReason=function(){
   const a=appts.find(x=>x.id===id);
   if(!a) return;
   a.status='未成交'; a.failReason=reason;
-  DB_set('appointments',appts); saveDB(); nav('appointment');
+  DB_set('appointments',appts); saveRecord('appointments',a); nav('appointment');
 };
 
 // 转单：跳到抵押登记，并把预约单状态改为已成交
@@ -3192,7 +3231,7 @@ window.updateApptStatus=function(id,status){
   if(!a) return;
   a.status=status;
   DB_set('appointments',appts);
-  saveDB();
+  saveRecord('appointments',a);
   nav('appointment');
 };
 
