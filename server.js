@@ -41,11 +41,17 @@ app.get('/api/data', async (req, res) => {
     ]);
 
     // 转换格式：每行的data字段就是原始对象
+    if (loansRes.error) console.error('loans error:', loansRes.error.message);
+    if (paymentsRes.error) console.error('payments error:', paymentsRes.error.message);
+    if (usersRes.error) console.error('users error:', usersRes.error.message);
+
     const loans = (loansRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const payments = (paymentsRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const extensions = (extensionsRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const expenses = (expensesRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const appointments = (appointmentsRes.data || []).map(r => ({ ...r.data, id: r.id }));
+
+    console.log(`Loaded: loans=${loans.length} payments=${payments.length} users=${(usersRes.data||[]).length}`);
 
     // 用户：如果没有则初始化
     let users = (usersRes.data || []).map(r => ({ ...r.data, id: r.id }));
