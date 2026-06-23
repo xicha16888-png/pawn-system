@@ -453,6 +453,15 @@ function today(){ return new Date().toISOString().slice(0,10); }
 function fmt(n){ return '$'+(+n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function newId(){ const id=(DB_get('nextId')||1001); DB_set('nextId',id+1); return id; }
+// 从服务器获取唯一ID（防止多人并发时ID重复）
+async function getNextId(table='loans'){
+  try{
+    const res=await fetch('/api/next-id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table}),signal:AbortSignal.timeout(5000)});
+    const json=await res.json();
+    if(json.ok) return json.id;
+  }catch(e){ console.warn('getNextId failed, using local:',e.message); }
+  return newId(); // 降级到本地id
+}
 function showMsg(id,msg,color='green'){
   const el=document.getElementById(id); if(!el) return;
   const c={'green':'alert-green','red':'alert-red','amber':'alert-amber','blue':'alert-blue'}[color]||'alert-green';
@@ -1345,8 +1354,9 @@ window.submitLoan=async function(){
     dueDate=new Date(dueDate); dueDate.setMonth(dueDate.getMonth()+1);
   }
   const contractNo=document.getElementById('lContractNo')?.value?.trim()||'';
+  const loanId=await getNextId('loans');
   const loan={
-    id:newId(),
+    id:loanId,
     createdBy:_currentUser?.username||'',
     createdByName:_currentUser?.name||'',
     contractNo:contractNo,
@@ -2115,7 +2125,8 @@ window.submitPayment=async function(){
   if(l.schedule.every(p=>p.paid)) l.status='已结清';
   loans[li]=l; DB_set('loans',loans);
   const pays=DB_get('payments')||[];
-  pays.push({id:newId(),loanId,customer:l.customer,period:periodNo,date:pDate,paidPrincipal:principal,paidInterest:interest,penalty});
+  const payId=await getNextId('payments');
+  pays.push({id:payId,loanId,customer:l.customer,period:periodNo,date:pDate,paidPrincipal:principal,paidInterest:interest,penalty});
   DB_set('payments',pays);
   showMsg('payMsg','⏳ 正在保存收款记录...','');
   // 单条保存，不覆盖其他人数据
@@ -2355,7 +2366,8 @@ window.submitExtension=async function(){
   l.extensions.push({date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   loans[li]=l; DB_set('loans',loans);
   const exts=DB_get('extensions')||[];
-  exts.push({id:newId(),loanId:id,customer:l.customer,date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
+  const extId=await getNextId('extensions');
+  exts.push({id:extId,loanId:id,customer:l.customer,date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   DB_set('extensions',exts);
   showMsg('extMsg','⏳ 正在保存续期记录...','');
   const extRecord = exts[exts.length-1];
@@ -3143,7 +3155,7 @@ function renderAppointment(){
   </div>`}`;
 }
 
-window.submitAppointment=function(){
+window.submitAppointment=async function(){
   const customer=document.getElementById('apptCust')?.value?.trim();
   const phone=document.getElementById('apptPhone')?.value?.trim();
   const arrivalDate=document.getElementById('apptDate')?.value;
@@ -3152,9 +3164,9 @@ window.submitAppointment=function(){
     return;
   }
   const appts=DB_get('appointments')||[];
-  const maxId=appts.length?Math.max(...appts.map(a=>a.id||0)):3000;
+  const apptId=await getNextId('appointments');
   const appt={
-    id:maxId+1,customer,phone,
+    id:apptId,customer,phone,
     source:document.getElementById('apptSource')?.value||'',
     phoneModel:document.getElementById('apptModel')?.value?.trim()||'',
     arrivalDate,
@@ -3321,11 +3333,12 @@ function renderExpenses(){
     </table></div>`:`<div class="empty-state"><div class="ei">🧾</div><p>${t('noRecord')}</p></div>`}
   </div>`;
 }
-window.submitExpense=function(){
+window.submitExpense=async function(){
   const amount=+(document.getElementById('exAmt')?.value||0);
   if(!amount){showMsg('exMsg',t('msgFillAmount'),'red');return;}
   const expenses=DB_get('expenses')||[];
-  const exp={id:newId(),date:document.getElementById('exDate')?.value||today(),
+  const expId=await getNextId('expenses');
+  const exp={id:expId,date:document.getElementById('exDate')?.value||today(),
     cat:document.getElementById('exCat')?.value||'',amount,
     note:document.getElementById('exNote')?.value||''};
   expenses.push(exp);
