@@ -2218,7 +2218,8 @@ function renderExtension(){
     </div>
     <div class="form-grid">
       <div class="form-group span3"><label>${t('selectLoanExt')}</label>
-        <select id="extLoan" onchange="loadExtLoan()">${opts||`<option>${t('noRecord')}</option>`}</select>
+        <input id="extSearch" placeholder="🔍 输入客户姓名/合同号搜索..." oninput="filterExtLoan()" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;margin-bottom:6px;outline:none;box-sizing:border-box">
+        <select id="extLoan" onchange="loadExtLoan()" size="5" style="width:100%;border:1.5px solid var(--purple);border-radius:8px;padding:6px;font-size:13px;font-family:inherit;outline:none">${opts||`<option>${t('noRecord')}</option>`}</select>
       </div>
     </div>
     <div id="extInfo" style="background:#f3e5f5;border-radius:8px;padding:12px;margin:12px 0;display:none">
@@ -2273,6 +2274,27 @@ function renderExtension(){
     </table></div>`:`<div class="empty-state"><div class="ei">🔄</div><p>${t('noRecord')}</p></div>`}
   </div>`;
 }
+window.filterExtLoan=function(){
+  const q=(document.getElementById('extSearch')?.value||'').toLowerCase();
+  const minPaid={2:1,3:1,4:2,5:3,6:3};
+  const allLoans=(DB_get('loans')||[]).filter(l=>l.status==='进行中');
+  const filtered=q?allLoans.filter(l=>
+    (l.customer||'').toLowerCase().includes(q)||
+    String(l.id).includes(q)||
+    (l.phoneModel||'').toLowerCase().includes(q)
+  ):allLoans;
+  const select=document.getElementById('extLoan');
+  if(!select) return;
+  select.innerHTML=filtered.map(l=>{
+    const total=l.periods||l.schedule.length||0;
+    const paid=l.schedule.filter(p=>p.paid).length;
+    const req=minPaid[total]||(total>6?Math.ceil(total/2):1);
+    const ok=paid>=req;
+    const tag=ok?`✅ 可续期(已还${paid}/${total}期)`:`❌ 需还${req}期(已还${paid}/${total}期)`;
+    return `<option value="${l.id}" ${ok?'':'style="color:#aaa"'}>#${l.id} — ${esc(l.customer)} · ${tag}</option>`;
+  }).join('')||(q?`<option>无匹配结果</option>`:`<option>${t('noRecord')}</option>`);
+};
+
 window.loadExtLoan=function(){
   const id=+(document.getElementById('extLoan')?.value||0);
   const l=(DB_get('loans')||[]).find(x=>x.id===id);
