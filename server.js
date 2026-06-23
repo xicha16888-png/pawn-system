@@ -172,6 +172,43 @@ app.post('/api/data', async (req, res) => {
 });
 
 // ══════════════════════════════════════════
+// 保存单条记录（POST /api/save-record）
+// ══════════════════════════════════════════
+app.post('/api/save-record', async (req, res) => {
+  try {
+    const { table, record } = req.body;
+    const allowed = ['loans','payments','extensions','expenses','appointments','users'];
+    if (!allowed.includes(table)) return res.json({ ok: false, error: '无效表名' });
+    if (!record || !record.id) return res.json({ ok: false, error: '记录缺少id' });
+
+    let row = { id: record.id, data: record };
+    if (table === 'payments' || table === 'extensions') {
+      row.loan_id = record.loanId || null;
+    }
+
+    const { error } = await supabase.from(table).upsert([row], { onConflict: 'id' });
+    if (error) return res.json({ ok: false, error: error.message });
+    res.json({ ok: true });
+  } catch(e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+// 保存config（nextId、stores、company）
+app.post('/api/save-config', async (req, res) => {
+  try {
+    const { key, value } = req.body;
+    const allowed = ['nextId','stores','company'];
+    if (!allowed.includes(key)) return res.json({ ok: false, error: '无效key' });
+    const { error } = await supabase.from('config').upsert([{ key, value }], { onConflict: 'key' });
+    if (error) return res.json({ ok: false, error: error.message });
+    res.json({ ok: true });
+  } catch(e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+// ══════════════════════════════════════════
 // 删除单条记录（POST /api/delete-record）
 // ══════════════════════════════════════════
 app.post('/api/delete-record', async (req, res) => {
