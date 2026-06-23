@@ -1322,6 +1322,16 @@ window.submitLoan=async function(){
   if(_currentUser&&(_currentUser.role==='readonly')){alert('无权限：只读账户不能录入合同');return;}
   const cust=document.getElementById('lCust')?.value?.trim();
   if(!cust){showMsg('loanMsg',t('msgFillCustomer'),'red');return;}
+
+  // ── 同名客户检查：进行中的合同不能有相同名字 ──
+  const existLoan=(DB_get('loans')||[]).find(l=>
+    l.status==='进行中' &&
+    (l.customer||'').trim().toLowerCase()===cust.toLowerCase()
+  );
+  if(existLoan){
+    showMsg('loanMsg',`❌ 客户 "${cust}" 已有进行中的合同 #${existLoan.id}，不能重复借款！如需续期请到【续期办理】操作。`,'red');
+    return;
+  }
   const brand=document.getElementById('lBrand')?.value||'';
   const modelSelectEl=document.getElementById('lModelSelect');
   const modelInputEl=document.getElementById('lModel');
