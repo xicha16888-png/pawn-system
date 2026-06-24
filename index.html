@@ -1925,6 +1925,14 @@ function renderUserMgmt() {
         <td style="font-size:11px;color:var(--muted)">${u.createdAt||'-'}</td>
         <td>
           ${u.username !== 'admin' ? `
+          <select onchange="changeUserRole(${u.id},this.value);this.value=''" style="font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;font-family:inherit;cursor:pointer;margin-right:4px">
+            <option value="">✏️ 改角色</option>
+            <option value="manager">主管</option>
+            <option value="appointment">预约专员</option>
+            <option value="loan">贷款专员</option>
+            <option value="collection">收款专员</option>
+            <option value="readonly">只读</option>
+          </select>
           <button class="btn btn-outline btn-sm" onclick="resetUserPwd(${u.id})">🔑 重置密码</button>
           <button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})" style="margin-left:4px">删除</button>
           ` : '<span style="font-size:11px;color:var(--muted)">超级管理员</span>'}
@@ -1979,6 +1987,20 @@ window.resetUserPwd = async function(id) {
     await saveRecord('users', users[idx]);
     alert('✅ 密码重置成功');
   }
+};
+
+window.changeUserRole = async function(id, newRole) {
+  if(!newRole) return;
+  const users = getUsers();
+  const idx = users.findIndex(u=>u.id===id);
+  if(idx<0) return;
+  const roleNames = {manager:'主管',appointment:'预约专员',loan:'贷款专员',collection:'收款专员',readonly:'只读'};
+  if(!confirm(`确认将「${users[idx].name||users[idx].username}」的角色改为「${roleNames[newRole]||newRole}」？`)) return;
+  users[idx].role = newRole;
+  DB_set('users', users);
+  await saveRecord('users', users[idx]);
+  const mc=document.getElementById('mainContent');
+  if(mc) mc.innerHTML=renderUserMgmt();
 };
 
 window.editLoan=function(id){
@@ -2304,7 +2326,7 @@ function buildPayTable(pays){
     </tr>`).join('')}
   </table></div>`;
 }
-window.deletePayment=async function(id){
+window.deletePayment=function(id){
   const pays=DB_get('payments')||[];
   const pay=pays.find(p=>p.id===id); if(!pay) return;
   if(!confirm(`${t('deleteBtn')} — ${pay.customer} ${t('period')} ${pay.period}?`)) return;
@@ -2317,12 +2339,8 @@ window.deletePayment=async function(id){
       loans[li].schedule[pi]={...loans[li].schedule[pi],paid:false,paidDate:null,paidPrincipal:0,paidInterest:0,penalty:0};
       if(loans[li].status==='已结清') loans[li].status='进行中';
       DB_set('loans',loans);
-      // 同步更新数据库里的贷款记录
-      await saveRecord('loans', loans[li]);
     }
   }
-  // 从数据库删除收款记录
-  await fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'payments',id})});
   const wrap=document.getElementById('payTableWrap');
   if(wrap) wrap.innerHTML=buildPayTable((DB_get('payments')||[]).slice().reverse());
   showMsg('payMsg','✅ '+t('saved'),'green');
