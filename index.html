@@ -857,6 +857,30 @@ function buildSidebar(){
     </div>`;
     return;
   }
+  // 专员简化侧边栏
+  if(isSpecialist()){
+    const role = _currentUser.role;
+    let menuItems = `<div class="nav-item" data-page="home"><span class="nav-icon">🏠</span>${t('home')}</div>`;
+    if(canAccessAppointment()) menuItems += `<div class="nav-item" data-page="appointment"><span class="nav-icon">📅</span>${_lang==='km'?'ការណាត់ជួប':_lang==='en'?'Appointments':'客服预约'}</div>`;
+    if(canAccessLoanAdd())     menuItems += `<div class="nav-item" data-page="loan-add"><span class="nav-icon">➕</span>${t('loanAdd')}</div>`;
+    menuItems += `<div class="nav-item" data-page="loan-list"><span class="nav-icon">🔍</span>${t('loanList')}</div>`;
+    if(canAccessCollection())  menuItems += `<div class="nav-item" data-page="payment-add"><span class="nav-icon">💰</span>${t('paymentAdd')}</div><div class="nav-item" data-page="extension"><span class="nav-icon">🔄</span>${t('extension')}</div>`;
+    sb.innerHTML=`
+    <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">MORODOK</div></div>
+    <div style="padding:4px 0">
+      <div class="sb-label">${t('mainMenu')}</div>
+      ${menuItems}
+    </div>
+    <div style="margin-top:auto;padding:8px 4px">
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px">${ROLES[_currentUser.role]?.name||''}</div>
+      <button onclick="doLogout()" style="width:100%;background:rgba(255,100,100,.2);border:1px solid rgba(255,100,100,.3);color:#fca5a5;padding:6px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">退出登录</button>
+    </div>`;
+    sb.querySelectorAll('.nav-item[data-page]').forEach(el=>{
+      el.addEventListener('click',()=>nav(el.dataset.page));
+      if(el.dataset.page===p) el.classList.add('active');
+    });
+    return;
+  }
   sb.innerHTML=`
     <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">MORODOK</div></div>
     <div style="padding:4px 0">
@@ -985,6 +1009,11 @@ const READONLY_PAGES = ['home','loan-list'];
 // 员工不能访问的页面
 const STAFF_BLOCKED = ['stats','stats-interest','finance','expenses','bad-debt'];
 
+// 各专员允许的页面白名单
+const APPOINTMENT_PAGES = ['home','appointment','loan-list'];
+const LOAN_PAGES        = ['home','appointment','loan-add','loan-list'];
+const COLLECTION_PAGES  = ['home','loan-list','payment-add','extension'];
+
 function nav(page){
   buildSidebar(); buildMobNav(page); closeMobMore();
   // 只读权限检查
@@ -995,6 +1024,16 @@ function nav(page){
     return;
   }
   // 员工权限检查
+  // 专员页面权限拦截
+  if(_currentUser && _currentUser.role==='appointment' && !APPOINTMENT_PAGES.includes(page)){
+    nav('home'); return;
+  }
+  if(_currentUser && _currentUser.role==='loan' && !LOAN_PAGES.includes(page)){
+    nav('home'); return;
+  }
+  if(_currentUser && _currentUser.role==='collection' && !COLLECTION_PAGES.includes(page)){
+    nav('home'); return;
+  }
   if(_currentUser && _currentUser.role==='staff' && STAFF_BLOCKED.includes(page)){
     const mc=document.getElementById('mainContent');
     if(mc) mc.innerHTML='<div class="card"><div class="empty-state"><div class="ei">🔒</div><p style="color:var(--red);font-weight:700">无权访问此页面</p><p style="font-size:12px;color:var(--muted)">员工账户无法查看财务统计</p></div></div>';
@@ -1370,6 +1409,7 @@ window.calcLoanFromPayment=function(){
 
 window.submitLoan=async function(){
   if(_currentUser&&(_currentUser.role==='readonly')){alert('无权限：只读账户不能录入合同');return;}
+  if(isSpecialist()&&!canAccessLoanAdd()){alert('无权限：您没有抵押登记权限');return;}
   const cust=document.getElementById('lCust')?.value?.trim();
   if(!cust){showMsg('loanMsg',t('msgFillCustomer'),'red');return;}
 
@@ -1844,7 +1884,7 @@ function renderUserMgmt() {
         <td>${i+1}</td>
         <td class="fw700">${esc(u.name||u.username)}</td>
         <td style="color:var(--muted)">${esc(u.username)}</td>
-        <td><span class="badge ${u.role==='admin'?'badge-red':u.role==='manager'?'badge-blue':u.role==='staff'?'badge-green':'badge-gray'}">${ROLES[u.role]?.name||u.role}</span></td>
+        <td><span class="badge ${u.role==='admin'?'badge-red':u.role==='manager'?'badge-blue':u.role==='appointment'?'badge-green':u.role==='loan'?'badge-green':u.role==='collection'?'badge-green':'badge-gray'}">${ROLES[u.role]?.name||u.role}</span></td>
         <td style="font-size:11px;color:var(--muted)">${u.createdAt||'-'}</td>
         <td>
           ${u.username !== 'admin' ? `
@@ -2168,6 +2208,7 @@ window.calcPayTotal=function(){
 };
 window.submitPayment=async function(){
   if(_currentUser&&_currentUser.role==='readonly'){alert('无权限：只读账户不能操作还款');return;}
+  if(isSpecialist()&&!canAccessCollection()){alert('无权限：您没有收款操作权限');return;}
   const loanId=+(document.getElementById('pLoan')?.value||0);
   if(!loanId){showMsg('payMsg',t('msgSelectLoan'),'red');return;}
   const periodNo=+(document.getElementById('pPeriod')?.value||0);
@@ -2428,6 +2469,7 @@ window.calcExtTotal=function(){
 };
 window.submitExtension=async function(){
   if(_currentUser&&_currentUser.role==='readonly'){alert('无权限：只读账户不能操作续期');return;}
+  if(isSpecialist()&&!canAccessCollection()){alert('无权限：您没有续期操作权限');return;}
   const id=+(document.getElementById('extLoan')?.value||0);
   if(!id){showMsg('extMsg',t('msgSelectLoan'),'red');return;}
   const loans=DB_get('loans')||[];
