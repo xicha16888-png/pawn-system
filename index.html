@@ -2326,11 +2326,14 @@ function buildPayTable(pays){
     </tr>`).join('')}
   </table></div>`;
 }
-window.deletePayment=function(id){
+window.deletePayment=async function(id){
   const pays=DB_get('payments')||[];
   const pay=pays.find(p=>p.id===id); if(!pay) return;
   if(!confirm(`${t('deleteBtn')} — ${pay.customer} ${t('period')} ${pay.period}?`)) return;
-  DB_set('payments',pays.filter(p=>p.id!==id));
+  const newPays=pays.filter(p=>p.id!==id);
+  DB_set('payments',newPays);
+  // 服务器删除收款记录
+  await fetch('/api/delete-record',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:'payments',id})});
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===pay.loanId);
   if(li>=0){
@@ -2339,6 +2342,8 @@ window.deletePayment=function(id){
       loans[li].schedule[pi]={...loans[li].schedule[pi],paid:false,paidDate:null,paidPrincipal:0,paidInterest:0,penalty:0};
       if(loans[li].status==='已结清') loans[li].status='进行中';
       DB_set('loans',loans);
+      // 同步更新合同到服务器
+      await saveRecord('loans',loans[li]);
     }
   }
   const wrap=document.getElementById('payTableWrap');
