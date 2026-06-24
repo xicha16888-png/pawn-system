@@ -621,6 +621,22 @@ window.doLogin = async function() {
   document.getElementById('appShell').style.display='';
   if(loginBtn){ loginBtn.disabled=false; loginBtn.textContent='登 录'; }
   updateUserBadge();
+  // 自动修复：把没有任何已还款记录但状态为已结清的合同改回进行中
+  setTimeout(async()=>{
+    const loans=DB_get('loans')||[];
+    let fixed=0;
+    for(const l of loans){
+      if(l.status==='已结清'){
+        const anyPaid=l.schedule&&l.schedule.some(p=>p.paid===true);
+        if(!anyPaid){
+          l.status='进行中';
+          fixed++;
+          await saveRecord('loans',l);
+        }
+      }
+    }
+    if(fixed>0){ DB_set('loans',loans); console.log(`✅ 自动修复 ${fixed} 笔合同状态`); }
+  },2000);
   nav(_currentPage||'home');
 };
 // ── 数据备份 ──
