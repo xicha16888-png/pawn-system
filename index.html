@@ -1710,7 +1710,7 @@ function buildLoanTable(loans){
             ${l.blacklist?(_lang==='km'?'🚫黑名单':_lang==='en'?'🚫 Black':'🚫 黑名单'):(_lang==='km'?'✅白名单':_lang==='en'?'✅ White':'✅ 白名单')}
           </button>`}
         </td>
-        <td style="white-space:nowrap">${statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}
+        <td style="white-space:nowrap">${l.status==='已结清'?`<button onclick="toggleLoanStatus(${l.id})" style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">已结清</button>`:statusBadge(l.status)}${isOverdue?'<span class="badge badge-red" style="margin-left:4px;font-size:10px">逾期</span>':''}
           ${l.interestType==='reduced'?`<span style="display:inline-block;margin-left:3px;font-size:10px;background:#ff6f00;color:#fff;border-radius:4px;padding:1px 5px;font-weight:600">↓降息${l.reducedRate||''}%</span>`:''}
           ${l.interestType==='referral'?`<span style="display:inline-block;margin-left:3px;font-size:10px;background:#7b1fa2;color:#fff;border-radius:4px;padding:1px 5px;font-weight:600">🤝转介绍</span>`:''}
           ${(()=>{const docs=l.documents||{};const cnt=['id-card','household','fb-screenshot','bank-statement'].filter(k=>docs[k]).length;return cnt===4?'<span style="display:inline-block;margin-left:3px;font-size:10px;background:#2e7d32;color:#fff;border-radius:4px;padding:1px 5px">📎齐</span>':cnt>0?`<span style="display:inline-block;margin-left:3px;font-size:10px;background:#f57c00;color:#fff;border-radius:4px;padding:1px 5px">📎${cnt}/4</span>`:'';})()}
@@ -1885,6 +1885,15 @@ window.deleteDoc=async function(loanId, docKey){
   }catch(e){ alert('删除失败：'+e.message); }
 };
 
+window.toggleLoanStatus=function(id){
+  const loans=DB_get('loans')||[];
+  const li=loans.findIndex(l=>l.id===id); if(li<0) return;
+  if(!confirm('确认将此合同改回「进行中」？')) return;
+  loans[li].status='进行中';
+  DB_set('loans',loans);
+  saveRecord('loans',loans[li]);
+  filterLoans();
+};
 window.toggleLockStatus=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
