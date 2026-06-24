@@ -1682,9 +1682,9 @@ function buildLoanTable(loans){
         </td>
         <td>
           ${(_currentUser&&_currentUser.role==='readonly')
-            ? `<span style="font-size:12px;color:${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'#c62828':'#2e7d32'};font-weight:600">${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'🔒 锁机':'🔓 未锁'}</span>`
-            : `<button onclick="toggleLockStatus(${l.id})" style="background:${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
-            ${(l.lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁')===_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'?(_lang==='km'?'🔒ចាក់សោ':_lang==='en'?'🔒 Locked':'🔒 锁机'):(_lang==='km'?'🔓មិនចាក់':_lang==='en'?'🔓 Unlocked':'🔓 未锁')}
+            ? `<span style="font-size:12px;color:${l.lockStatus==='锁机'?'#c62828':'#2e7d32'};font-weight:600">${l.lockStatus==='锁机'?'🔒 锁机':'🔓 未锁'}</span>`
+            : `<button onclick="toggleLockStatus(${l.id})" style="background:${l.lockStatus==='锁机'?'#c62828':'#2e7d32'};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600;font-family:inherit">
+            ${l.lockStatus==='锁机'?'🔒 锁机':'🔓 未锁'}
           </button>`}
         </td>
         <td>
@@ -1872,7 +1872,7 @@ window.deleteDoc=async function(loanId, docKey){
 window.toggleLockStatus=function(id){
   const loans=DB_get('loans')||[];
   const li=loans.findIndex(l=>l.id===id); if(li<0) return;
-  const cur=loans[li].lockStatus||_lang==='km'?'មិនចាក់':_lang==='en'?'Unlocked':'未锁';
+  const cur=loans[li].lockStatus||'未锁';
   loans[li].lockStatus=cur==='锁机'?'未锁':'锁机';
   DB_set('loans',loans);
   saveRecord('loans',loans[li]);
