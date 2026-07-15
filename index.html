@@ -169,6 +169,7 @@ tr:hover td{background:#f8faff}
   .stats-grid{grid-template-columns:1fr 1fr}
 }
 </style>
+<script src="https://customer-query-system.onrender.com/widget.js"></script>
 </head>
 <body>
 
@@ -1473,6 +1474,15 @@ window.submitLoan=async function(){
     showMsg('loanMsg',`❌ 客户 "${cust}" 已有进行中的合同 #${existLoan.id}，不能重复借款！如需续期请到【续期办理】操作。`,'red');
     return;
   }
+
+  // 🔎 客户交叉查询：检查该客户是否已在手机分期系统(MORODOK)有未结清贷款，或历史名单有不良记录
+  const custPhone=document.getElementById('lPhone')?.value?.trim()||'';
+  const custIdNumber=document.getElementById('lId')?.value?.trim()||'';
+  if (window.CustomerCheck) {
+    const _ccOk = await CustomerCheck.confirmBeforeSubmit(cust, custPhone, custIdNumber);
+    if (!_ccOk) { showMsg('loanMsg', '已取消提交', 'red'); return; }
+  }
+
   const brand=document.getElementById('lBrand')?.value||'';
   const modelSelectEl=document.getElementById('lModelSelect');
   const modelInputEl=document.getElementById('lModel');
@@ -3907,4 +3917,3 @@ window.saveCompany=function(){
 </div><!-- /appShell -->
 </body>
 </html>
-
