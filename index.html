@@ -1475,11 +1475,11 @@ window.submitLoan=async function(){
     return;
   }
 
-  // 🔎 客户交叉查询：检查该客户是否已在手机分期系统(MORODOK)有未结清贷款，或历史名单有不良记录
+  // 🔎 客户交叉查询：检查该客户是否已在手机分期系统(MORODOK)有未结清贷款，或黑名单
   const custPhone=document.getElementById('lPhone')?.value?.trim()||'';
   const custIdNumber=document.getElementById('lId')?.value?.trim()||'';
   if (window.CustomerCheck) {
-    const _ccOk = await CustomerCheck.confirmBeforeSubmit(cust, custPhone, custIdNumber);
+    const _ccOk = await CustomerCheck.confirmBeforeSubmit(cust, custPhone, custIdNumber, 'pawn');
     if (!_ccOk) { showMsg('loanMsg', '已取消提交', 'red'); return; }
   }
 
