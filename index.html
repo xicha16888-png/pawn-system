@@ -769,7 +769,10 @@ function setSyncStatus(s){
   if(dot) dot.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
   if(txt) txt.textContent=s==='syncing'?t('syncing'):s==='error'?t('syncError'):t('synced');
 }
+let _loadingDB=false;
 async function loadDB(){
+  if(_loadingDB) return {ok:false,reason:'Already loading'};
+  _loadingDB=true;
   try{
     const ctrl=new AbortController(), timer=setTimeout(()=>ctrl.abort(),20000);
     const res=await fetch('/api/data',{cache:'no-store',signal:ctrl.signal}); clearTimeout(timer);
@@ -784,7 +787,7 @@ async function loadDB(){
     _db=data; _dbReady=true; _lastSync=Date.now();
     try{ const el=document.getElementById('companyName'); if(el&&data.company?.name) el.textContent=data.company.name; }catch(e){}
     return {ok:true};
-  }catch(e){ return {ok:false,reason:e.name==='AbortError'?'Timeout':e.message}; }
+  }catch(e){ return {ok:false,reason:e.name==='AbortError'?'Timeout':e.message}; }finally{_loadingDB=false;}
 }
 // 保存单条记录到服务器（防并发覆盖）
 async function saveRecord(table, record){
@@ -864,7 +867,7 @@ setInterval(async()=>{
   const p=currentPage(); if(FORM_PAGES.includes(p)) return;
   const r=await loadDB();
   if(r.ok&&PAGES[p]){document.getElementById('mainContent').innerHTML=PAGES[p](); initPage(p); updateBadges();}
-},15000);
+},90000);
 
 // ── Sidebar ──
 function buildSidebar(){
