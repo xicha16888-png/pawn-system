@@ -225,6 +225,32 @@ app.post('/api/delete-record', async (req, res) => {
 });
 
 // ══════════════════════════════════════════
+// 清空业务数据（保留用户/门店/单位信息）
+// ══════════════════════════════════════════
+app.post('/api/wipe-business-data', async (req, res) => {
+  try {
+    const tables = ['loans', 'payments', 'extensions', 'expenses', 'appointments'];
+    const results = await Promise.all(
+      tables.map(t => supabase.from(t).delete().not('id', 'is', null))
+    );
+    const errors = results
+      .map((r, i) => r.error ? `${tables[i]}: ${r.error.message}` : null)
+      .filter(Boolean);
+    if (errors.length > 0) {
+      console.error('wipe-business-data errors:', errors);
+      return res.status(500).json({ ok: false, error: errors.join('; ') });
+    }
+    // 重置 nextId，方便重新从头录入
+    await supabase.from('config').upsert([{ key: 'nextId', value: 1001 }], { onConflict: 'key' });
+    console.log('✅ 业务数据已清空（loans/payments/extensions/expenses/appointments），用户/门店/单位信息保留');
+    res.json({ ok: true });
+  } catch(e) {
+    console.error('POST /api/wipe-business-data error:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ══════════════════════════════════════════
 // 测试连接
 // ══════════════════════════════════════════
 app.get('/api/test', async (req, res) => {
