@@ -744,6 +744,47 @@ window.restoreBackup = async function() {
   input.click();
 };
 
+// ── 清空业务数据（仅保留用户/门店/单位信息） ──
+window.wipeBusinessData = async function() {
+  if(!isAdmin()) { alert('只有管理员可以清空数据'); return; }
+  const loans=DB_get('loans')||[];
+  const pays=DB_get('payments')||[];
+  const exts=DB_get('extensions')||[];
+  const exps=DB_get('expenses')||[];
+  const appts=DB_get('appointments')||[];
+  const confirm1 = confirm(`⚠️ 即将清空全部业务数据！
+
+将删除：
+• 合同 ${loans.length} 笔
+• 还款记录 ${pays.length} 条
+• 续期记录 ${exts.length} 条
+• 支出记录 ${exps.length} 条
+• 预约记录 ${appts.length} 条
+
+保留：用户账号、门店、单位信息设置不变
+
+此操作不可撤销！确认继续？`);
+  if(!confirm1) return;
+  const typed = prompt('请输入「确认清空」以继续（此操作不可撤销）：');
+  if(typed !== '确认清空') { alert('输入不匹配，已取消'); return; }
+  const btn = event?.target;
+  if(btn){ btn.disabled=true; btn.textContent='⏳ 清空中...'; }
+  try {
+    const res = await fetch('/api/wipe-business-data', { method:'POST' });
+    const json = await res.json();
+    if(json.ok) {
+      alert('✅ 业务数据已清空！页面即将刷新');
+      location.reload();
+    } else {
+      alert('❌ 清空失败：' + (json.error||'未知错误'));
+      if(btn){ btn.disabled=false; btn.textContent='🗑️ 清空业务数据'; }
+    }
+  } catch(e) {
+    alert('❌ 清空失败：' + e.message);
+    if(btn){ btn.disabled=false; btn.textContent='🗑️ 清空业务数据'; }
+  }
+};
+
 window.doLogout = function() {
   if (!confirm('确认退出登录？')) return;
   _currentUser = null;
@@ -3752,6 +3793,13 @@ function renderCompany(){
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="downloadBackup()">💾 立即备份数据</button>
       <button class="btn btn-outline" onclick="restoreBackup()" style="border-color:var(--red);color:var(--red)">🔄 从备份文件恢复</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px;border:2px solid #b71c1c;background:#fff5f5">
+    <div class="card-title" style="color:#b71c1c;margin-bottom:10px">🗑️ 清空业务数据</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">清空全部合同/还款/续期/支出/预约记录，重新开始录入。用户账号、门店、单位信息设置保留不变。此操作不可撤销，请谨慎操作。</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="wipeBusinessData()" style="border-color:#b71c1c;color:#b71c1c">🗑️ 清空业务数据</button>
     </div>
   </div>` : ''}
   <div class="card">
