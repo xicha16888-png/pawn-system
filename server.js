@@ -22,6 +22,24 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const DEFAULT_ADMIN = { id:1, username:'admin', password:'admin123', role:'admin', name:'管理员', createdAt:'' };
 
 // ══════════════════════════════════════════
+// 分批 upsert：Supabase/PostgREST 单次请求默认限制约1000行，
+// 大批量导入（如历史数据恢复）超过此限制会被静默截断。
+// 这里把每次请求拆成 <=500 行的小批次，依次执行，避免截断。
+// ══════════════════════════════════════════
+async function chunkedUpsert(table, rows, onConflict, chunkSize = 500) {
+  const results = [];
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    const r = await supabase.from(table).upsert(chunk, { onConflict });
+    results.push({ table, from: i, to: i + chunk.length, error: r.error || null });
+    if (r.error) {
+      console.error(`chunkedUpsert ${table} rows ${i}-${i + chunk.length} error:`, r.error.message);
+    }
+  }
+  return results;
+}
+
+// ══════════════════════════════════════════
 // 读取所有数据（GET /api/data）
 // ══════════════════════════════════════════
 app.get('/api/data', async (req, res) => {
@@ -97,6 +115,7 @@ app.get('/api/data', async (req, res) => {
 // ══════════════════════════════════════════
 // 保存数据（POST /api/data）
 // 智能差量更新：只更新变化的记录
+// （已改为分批 upsert，避免大批量导入被静默截断在1000行）
 // ══════════════════════════════════════════
 app.post('/api/data', async (req, res) => {
   try {
@@ -107,7 +126,7 @@ app.post('/api/data', async (req, res) => {
     if (Array.isArray(body.loans)) {
       const rows = body.loans.map(l => ({ id: l.id, data: l }));
       if (rows.length > 0) {
-        ops.push(supabase.from('loans').upsert(rows, { onConflict: 'id' }));
+        ops.push(chunkedUpsert('loans', rows, 'id'));
       }
     }
 
@@ -115,7 +134,7 @@ app.post('/api/data', async (req, res) => {
     if (Array.isArray(body.payments)) {
       const rows = body.payments.map(p => ({ id: p.id, loan_id: p.loanId, data: p }));
       if (rows.length > 0) {
-        ops.push(supabase.from('payments').upsert(rows, { onConflict: 'id' }));
+        ops.push(chunkedUpsert('payments', rows, 'id'));
       }
     }
 
@@ -123,7 +142,7 @@ app.post('/api/data', async (req, res) => {
     if (Array.isArray(body.extensions)) {
       const rows = body.extensions.map(e => ({ id: e.id, loan_id: e.loanId, data: e }));
       if (rows.length > 0) {
-        ops.push(supabase.from('extensions').upsert(rows, { onConflict: 'id' }));
+        ops.push(chunkedUpsert('extensions', rows, 'id'));
       }
     }
 
@@ -131,7 +150,7 @@ app.post('/api/data', async (req, res) => {
     if (Array.isArray(body.expenses)) {
       const rows = body.expenses.map(e => ({ id: e.id, data: e }));
       if (rows.length > 0) {
-        ops.push(supabase.from('expenses').upsert(rows, { onConflict: 'id' }));
+        ops.push(chunkedUpsert('expenses', rows, 'id'));
       }
     }
 
@@ -139,7 +158,7 @@ app.post('/api/data', async (req, res) => {
     if (Array.isArray(body.appointments)) {
       const rows = body.appointments.map(a => ({ id: a.id, data: a }));
       if (rows.length > 0) {
-        ops.push(supabase.from('appointments').upsert(rows, { onConflict: 'id' }));
+        ops.push(chunkedUpsert('appointments', rows, 'id'));
       }
     }
 
@@ -147,7 +166,7 @@ app.post('/api/data', async (req, res) => {
     if (Array.isArray(body.users)) {
       const rows = body.users.map(u => ({ id: u.id, data: u }));
       if (rows.length > 0) {
-        ops.push(supabase.from('users').upsert(rows, { onConflict: 'id' }));
+        ops.push(chunkedUpsert('users', rows, 'id'));
       }
     }
 
@@ -155,7 +174,7 @@ app.post('/api/data', async (req, res) => {
     if (Array.isArray(body.iobLoans)) {
       const rows = body.iobLoans.map(l => ({ id: l.id, data: l }));
       if (rows.length > 0) {
-        ops.push(supabase.from('iob_loans').upsert(rows, { onConflict: 'id' }));
+        ops.push(chunkedUpsert('iob_loans', rows, 'id'));
       }
     }
 
@@ -165,12 +184,12 @@ app.post('/api/data', async (req, res) => {
     if (body.company !== undefined) configRows.push({ key: 'company', value: body.company });
     if (body.nextId !== undefined) configRows.push({ key: 'nextId', value: body.nextId });
     if (configRows.length > 0) {
-      ops.push(supabase.from('config').upsert(configRows, { onConflict: 'key' }));
+      ops.push(supabase.from('config').upsert(configRows, { onConflict: 'key' }).then(r => [{ table: 'config', error: r.error || null }]));
     }
 
-    // 并行执行所有操作
-    const results = await Promise.all(ops);
-    const errors = results.filter(r => r.error).map(r => r.error.message);
+    // 依次执行所有分批操作（每个 op 都是一个 Promise<Array<{table,error}>>）
+    const opResults = await Promise.all(ops);
+    const errors = opResults.flat().filter(r => r && r.error).map(r => `${r.table}: ${r.error.message}`);
     if (errors.length > 0) {
       console.error('Save errors:', errors);
       return res.status(500).json({ error: errors.join('; ') });
