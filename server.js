@@ -29,7 +29,7 @@ app.get('/api/data', async (req, res) => {
     // 并行读取所有表
     const [
       loansRes, paymentsRes, extensionsRes, expensesRes,
-      appointmentsRes, usersRes, configRes
+      appointmentsRes, usersRes, configRes, iobLoansRes
     ] = await Promise.all([
       supabase.from('loans').select('id, data').order('id'),
       supabase.from('payments').select('id, data').order('id'),
@@ -37,21 +37,24 @@ app.get('/api/data', async (req, res) => {
       supabase.from('expenses').select('id, data').order('id'),
       supabase.from('appointments').select('id, data').order('id'),
       supabase.from('users').select('id, data').order('id'),
-      supabase.from('config').select('key, value')
+      supabase.from('config').select('key, value'),
+      supabase.from('iob_loans').select('id, data').order('id')
     ]);
 
     // 转换格式：每行的data字段就是原始对象
     if (loansRes.error) console.error('loans error:', loansRes.error.message);
     if (paymentsRes.error) console.error('payments error:', paymentsRes.error.message);
     if (usersRes.error) console.error('users error:', usersRes.error.message);
+    if (iobLoansRes.error) console.error('iob_loans error:', iobLoansRes.error.message);
 
     const loans = (loansRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const payments = (paymentsRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const extensions = (extensionsRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const expenses = (expensesRes.data || []).map(r => ({ ...r.data, id: r.id }));
     const appointments = (appointmentsRes.data || []).map(r => ({ ...r.data, id: r.id }));
+    const iobLoans = (iobLoansRes.data || []).map(r => ({ ...r.data, id: r.id }));
 
-    console.log(`Loaded: loans=${loans.length} payments=${payments.length} users=${(usersRes.data||[]).length}`);
+    console.log(`Loaded: loans=${loans.length} payments=${payments.length} users=${(usersRes.data||[]).length} iobLoans=${iobLoans.length}`);
 
     // 用户：如果没有则初始化
     let users = (usersRes.data || []).map(r => ({ ...r.data, id: r.id }));
@@ -78,6 +81,7 @@ app.get('/api/data', async (req, res) => {
       expenses,
       appointments,
       users,
+      iobLoans,
       stores: configMap['stores'] || [],
       company: configMap['company'] || { name: 'PAWN SYSTEM', address: '', phone: '', note: '' },
       nextId
@@ -147,6 +151,14 @@ app.post('/api/data', async (req, res) => {
       }
     }
 
+    // 保存iobLoans（先息后本）
+    if (Array.isArray(body.iobLoans)) {
+      const rows = body.iobLoans.map(l => ({ id: l.id, data: l }));
+      if (rows.length > 0) {
+        ops.push(supabase.from('iob_loans').upsert(rows, { onConflict: 'id' }));
+      }
+    }
+
     // 保存config（stores、company、nextId）
     const configRows = [];
     if (body.stores !== undefined) configRows.push({ key: 'stores', value: body.stores });
@@ -177,7 +189,7 @@ app.post('/api/data', async (req, res) => {
 app.post('/api/save-record', async (req, res) => {
   try {
     const { table, record } = req.body;
-    const allowed = ['loans','payments','extensions','expenses','appointments','users'];
+    const allowed = ['loans','payments','extensions','expenses','appointments','users','iob_loans'];
     if (!allowed.includes(table)) return res.json({ ok: false, error: '无效表名' });
     if (!record || !record.id) return res.json({ ok: false, error: '记录缺少id' });
 
@@ -229,7 +241,7 @@ app.post('/api/delete-record', async (req, res) => {
 // ══════════════════════════════════════════
 app.post('/api/wipe-business-data', async (req, res) => {
   try {
-    const tables = ['loans', 'payments', 'extensions', 'expenses', 'appointments'];
+    const tables = ['loans', 'payments', 'extensions', 'expenses', 'appointments', 'iob_loans'];
     const results = await Promise.all(
       tables.map(t => supabase.from(t).delete().not('id', 'is', null))
     );
@@ -356,10 +368,11 @@ app.post('/api/next-id', async (req, res) => {
     // 从对应表取最大id，加1返回
     const tableMap = {
       loans: 'loans',
-      payments: 'payments', 
+      payments: 'payments',
       extensions: 'extensions',
       expenses: 'expenses',
-      appointments: 'appointments'
+      appointments: 'appointments',
+      iob_loans: 'iob_loans'
     };
     const t = tableMap[table] || 'loans';
     const { data, error } = await supabase
@@ -368,7 +381,8 @@ app.post('/api/next-id', async (req, res) => {
       .order('id', { ascending: false })
       .limit(1);
     if (error) throw new Error(error.message);
-    const maxId = data && data.length > 0 ? data[0].id : (t === 'appointments' ? 3000 : 1000);
+    const baseId = t === 'appointments' ? 3000 : t === 'iob_loans' ? 6000 : 1000;
+    const maxId = data && data.length > 0 ? data[0].id : baseId;
     res.json({ ok: true, id: maxId + 1 });
   } catch(e) {
     res.json({ ok: false, error: e.message });
