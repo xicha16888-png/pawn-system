@@ -1517,7 +1517,7 @@ window.submitLoan=async function(){
 
   // ── 同名客户检查：进行中的合同不能有相同名字 ──
   const existLoan=(DB_get('loans')||[]).find(l=>
-    l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中' &&
+    l.status==='进行中' &&
     (l.customer||'').trim().toLowerCase()===cust.toLowerCase()
   );
   if(existLoan){
