@@ -910,7 +910,7 @@ setInterval(async()=>{
   const p=currentPage(); if(FORM_PAGES.includes(p)) return;
   const r=await loadDB();
   if(r.ok&&PAGES[p]){document.getElementById('mainContent').innerHTML=PAGES[p](); initPage(p); updateBadges();}
-},90000);
+},300000);
 
 // ── Sidebar ──
 function buildSidebar(){
