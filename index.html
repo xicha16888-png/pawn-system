@@ -1705,10 +1705,17 @@ function buildLoanTable(loans){
     groups[d].push(l);
   });
   const sortedDates=Object.keys(groups).sort().reverse();
+  const totalCount=loans.length;
+  const totalAmt=loans.reduce((a,l)=>a+(+l.loanAmount||0),0);
+  const summaryHtml=`<div class="card" style="margin-bottom:12px;padding:10px 16px;background:#eef4ff;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-weight:700;color:var(--navy);font-size:13px">📊 当前筛选结果</span>
+      <span style="background:var(--navy);color:#fff;border-radius:12px;padding:2px 12px;font-size:12px;font-weight:700">共 ${totalCount} 笔</span>
+      <span style="color:var(--orange);font-weight:700;font-size:13px">合计 ${fmt(totalAmt)}</span>
+    </div>`;
   const thead=`<tr><th>${t('colNo')}</th><th>${_lang==='km'?'លេខសន្យា':_lang==='en'?'Contract#':'合同编号'}</th><th>${t('colDate')}</th><th>${t('colCustomer')}</th><th>${t('colModel')}</th><th>${t('colImei')}</th>
       <th>${t('colLoanAmt')}</th><th>${_lang==='km'?'ប្រាក់/ខែ':_lang==='en'?'Monthly Pay':'月还款额'}</th>
       <th>${t('colProgress')}</th><th>${_lang==='km'?'ចាក់សោ':_lang==='en'?'Lock':_lang==='km'?'ចាក់សោ':_lang==='en'?'Locked':'锁机'}</th><th>${_lang==='km'?'បញ្ជីខ្មៅ':_lang==='en'?'Blacklist':'黑白名单'}</th><th>${t('colStatus')}</th><th>${t('colAction')}</th></tr>`;
-  return sortedDates.map(date=>{
+  return summaryHtml+sortedDates.map(date=>{
     const dayLoans=groups[date];
     const uid='day_'+date.replace(/-/g,'');
     const totalAmt=dayLoans.reduce((a,l)=>a+(+l.loanAmount||0),0);
