@@ -2246,7 +2246,7 @@ function renderPaymentAdd(){
     <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作还款</p></div></div>`;
   }
   const loans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
-  const opts=loans.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('');
+  const opts=loans.slice(0,50).map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('');
   const pays=(DB_get('payments')||[]).slice().reverse();
   return `
   <div class="page-header"><div class="page-title">💰 ${t('paymentTitle')}</div></div>
@@ -2263,7 +2263,7 @@ function renderPaymentAdd(){
           <button class="btn btn-outline btn-sm" onclick="clearPawnSearch()" title="清除筛选">✕ 清除</button>
         </div>
         <select id="pLoan" onchange="loadLoanPeriods()" size="1" style="width:100%">${opts||`<option>${t('noRecord')}</option>`}</select>
-        <div id="pLoanHint" style="font-size:11px;color:var(--muted);margin-top:4px">共 ${loans.length} 份进行中合同，请输入关键字快速筛选后再选择</div>
+        <div id="pLoanHint" style="font-size:11px;color:var(--muted);margin-top:4px">共 ${loans.length} 份进行中合同${loans.length>50?'（下方仅预览前50条，请输入关键字精确查找）':'，请输入关键字快速筛选后再选择'}</div>
       </div>
       <div class="form-group"><label>${t('paymentDate')}</label><input type="date" id="pDate" value="${today()}"></div>
       <div class="form-group"><label>${t('payPeriod')}</label><select id="pPeriod" onchange="autoFillPayment()"></select></div>
@@ -2300,7 +2300,7 @@ window.filterPawnLoans=function(){
         const model=(l.phoneModel||'').toLowerCase();
         return id.includes(kw)||name.includes(kw)||ic.includes(kw)||phone.includes(kw)||imei.includes(kw)||model.includes(kw);
       })
-    : loans;
+    : loans.slice(0,50);
   // 重新渲染下拉选项
   sel.innerHTML=matched.length
     ? matched.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('')
