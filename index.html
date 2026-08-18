@@ -1142,15 +1142,7 @@ function nav(page){
   }
   if(PROTECTED.includes(page)&&!_unlocked){requirePwd(page,()=>nav(page));return;}
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===page));
-  if(!_dirty){
-    loadDB().then(r=>{
-      if(r.ok){
-        const fn=PAGES[page],mc=document.getElementById('mainContent');
-        if(fn&&mc){mc.innerHTML=fn();mc.scrollTop=0;initPage(page);}
-        updateBadges();
-      }
-    });
-  } else {
+    {
     const fn=PAGES[page],mc=document.getElementById('mainContent');
     if(fn&&mc){mc.innerHTML=fn();mc.scrollTop=0;initPage(page);}
     updateBadges();
