@@ -254,7 +254,7 @@ const I18N = {
     systemTitle:'手机抵押贷款管理系统', systemSub:'抵押管理系统',
     synced:'已同步', syncing:'同步中...', syncError:'同步失败!',
     mainMenu:'主菜单', loanMgmt:'贷款管理', reports:'统计报表', settings:'基础设置',
-    home:'系统首页', loanAdd:'抵押登记', loanList:'贷款查询',
+    home:'系统首页', loanAdd:'新增客户', loanList:'贷款查询',
     paymentAdd:'收息还款', extension:'续期办理',
     stats:'利息统计', financeReport:'财务报表',
     reminderOverdue:'逾期提醒', reminderTomorrow:'明日到期',
@@ -923,6 +923,7 @@ function buildSidebar(){
     if(canAccessLoanAdd())     menuItems += `<div class="nav-item" data-page="loan-add"><span class="nav-icon">➕</span>${t('loanAdd')}</div>`;
     menuItems += `<div class="nav-item" data-page="loan-list"><span class="nav-icon">🔍</span>${t('loanList')}</div>`;
     if(canAccessCollection())  menuItems += `<div class="nav-item" data-page="payment-add"><span class="nav-icon">💰</span>${t('paymentAdd')}</div><div class="nav-item" data-page="extension"><span class="nav-icon">🔄</span>${t('extension')}</div>`;
+    if(canAccessLoanAdd()||canAccessCollection()) menuItems += `<div class="nav-item" data-page="loan-list-new"><span class="nav-icon">🆕</span>正常合同</div><div class="nav-item" data-page="loan-list-repeat"><span class="nav-icon">🔁</span>复购合同</div>`;
     if(canAccessLoanAdd()||canAccessCollection()) menuItems += `<div class="nav-item" data-page="iob"><span class="nav-icon">🪙</span>先息后本</div>`;
     sb.innerHTML=`
     <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">MORODOK</div></div>
@@ -959,6 +960,7 @@ function buildSidebar(){
     if(canAccessLoanAdd())     menuItems += `<div class="nav-item" data-page="loan-add"><span class="nav-icon">➕</span>${t('loanAdd')}</div>`;
     menuItems += `<div class="nav-item" data-page="loan-list"><span class="nav-icon">🔍</span>${t('loanList')}</div>`;
     if(canAccessCollection())  menuItems += `<div class="nav-item" data-page="payment-add"><span class="nav-icon">💰</span>${t('paymentAdd')}</div><div class="nav-item" data-page="extension"><span class="nav-icon">🔄</span>${t('extension')}</div>`;
+    if(canAccessLoanAdd()||canAccessCollection()) menuItems += `<div class="nav-item" data-page="loan-list-new"><span class="nav-icon">🆕</span>正常合同</div><div class="nav-item" data-page="loan-list-repeat"><span class="nav-icon">🔁</span>复购合同</div>`;
     if(canAccessLoanAdd()||canAccessCollection()) menuItems += `<div class="nav-item" data-page="iob"><span class="nav-icon">🪙</span>先息后本</div>`;
     sb.innerHTML=`
     <div class="sb-logo"><div class="sb-logo-sub">${t('systemSub')}</div><div class="sb-logo-name">MORODOK</div></div>
@@ -990,6 +992,8 @@ function buildSidebar(){
       <div class="nav-item" data-page="loan-list"><span class="nav-icon">🔍</span>${t('loanList')}</div>
       <div class="nav-item" data-page="payment-add"><span class="nav-icon">💰</span>${t('paymentAdd')}</div>
       <div class="nav-item" data-page="extension"><span class="nav-icon">🔄</span>${t('extension')}</div>
+      <div class="nav-item" data-page="loan-list-new"><span class="nav-icon">🆕</span>正常合同</div>
+      <div class="nav-item" data-page="loan-list-repeat"><span class="nav-icon">🔁</span>复购合同</div>
       <div class="nav-item" data-page="iob"><span class="nav-icon">🪙</span>先息后本</div>
     </div>
     <div class="nav-divider"></div>
@@ -1094,6 +1098,7 @@ function requirePwd(page,cb){
 // ── Navigation ──
 const PAGES={
   'user-mgmt':renderUserMgmt,'home':renderHome,'loan-add':renderLoanAdd,'loan-list':renderLoanList,
+  'loan-list-new':renderLoanListNewSeg,'loan-list-repeat':renderLoanListRepeatSeg,
   'payment-add':renderPaymentAdd,'extension':renderExtension,
   'stats':renderStats,'finance':renderFinance,'expenses':renderExpenses,
   'bad-debt':renderBadDebt,
@@ -1107,8 +1112,8 @@ const READONLY_PAGES = ['home','loan-list'];
 const STAFF_BLOCKED = ['stats','stats-interest','finance','expenses','bad-debt'];
 // 各专员允许的页面白名单
 const APPOINTMENT_PAGES = ['home','appointment','loan-list'];
-const LOAN_PAGES        = ['home','appointment','loan-add','loan-list','iob'];
-const COLLECTION_PAGES  = ['home','loan-list','payment-add','extension','iob'];
+const LOAN_PAGES        = ['home','appointment','loan-add','loan-list','loan-list-new','loan-list-repeat','iob'];
+const COLLECTION_PAGES  = ['home','loan-list','payment-add','extension','loan-list-new','loan-list-repeat','iob'];
 
 
 
@@ -1662,11 +1667,17 @@ window.submitLoan=async function(){
 // ══════════════════════════════════════════════════════
 // LOAN LIST
 // ══════════════════════════════════════════════════════
-function renderLoanList(){
-  const loans=DB_get('loans')||[];
+function renderLoanList(){ window._loanListSegment=null; return renderLoanListInner(); }
+function renderLoanListNewSeg(){ window._loanListSegment='new'; return renderLoanListInner(); }
+function renderLoanListRepeatSeg(){ window._loanListSegment='repeat'; return renderLoanListInner(); }
+function renderLoanListInner(){
+  const seg=window._loanListSegment||null;
+  let loans=DB_get('loans')||[];
+  if(seg) loans=loans.filter(l=>l.customerSegment===seg);
   const months=[...new Set(loans.map(l=>l.date.slice(0,7)))].sort().reverse();
+  const pageTitle = seg==='new' ? '🆕 正常合同' : seg==='repeat' ? '🔁 复购合同' : `🔍 ${t('loanListTitle')}`;
   return `
-  <div class="page-header"><div class="page-title">🔍 ${t('loanListTitle')}</div></div>
+  <div class="page-header"><div class="page-title">${pageTitle}</div></div>
   <div class="search-row">
     <input id="lSearch" placeholder="${t('searchPlaceholder')}" oninput="filterLoans()">
     <select id="lMonthFilter" onchange="filterLoans()" style="border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none">
@@ -1687,7 +1698,9 @@ window.filterLoans=function(){
   const q=(document.getElementById('lSearch')?.value||'').toLowerCase();
   const st=document.getElementById('lStatusFilter')?.value||'';
   const mo=document.getElementById('lMonthFilter')?.value||'';
+  const seg=window._loanListSegment||null;
   let list=DB_get('loans')||[];
+  if(seg) list=list.filter(l=>l.customerSegment===seg);
   if(q) list=list.filter(l=>l.customer.toLowerCase().includes(q)||String(l.id).includes(q)||(l.contractNo||'').toLowerCase().includes(q)||(l.phoneModel||'').toLowerCase().includes(q)||(l.phoneImei||'').includes(q));
   if(st) list=list.filter(l=>l.status===st);
   if(mo) list=list.filter(l=>l.date.slice(0,7)===mo);
@@ -2247,13 +2260,18 @@ window.deleteLoan=function(id){
 // ══════════════════════════════════════════════════════
 // PAYMENT
 // ══════════════════════════════════════════════════════
+function paidTag(l){
+  const total=l.periods||l.schedule.length||0;
+  const paid=l.schedule.filter(p=>p.paid).length;
+  return (total>0&&paid>=total) ? '已还清' : `已还${paid}期`;
+}
 function renderPaymentAdd(){
   if(_currentUser&&_currentUser.role==='readonly'){
     return `<div class="page-header"><div class="page-title">💰 ${t('paymentTitle')}</div></div>
     <div class="card"><div class="empty-state"><div class="ei">🔒</div><p>只读账户无法操作还款</p></div></div>`;
   }
   const loans=(DB_get('loans')||[]).filter(l=>l.status===_lang==='km'?'កំពុងដំណើរ':_lang==='en'?'Active':'进行中');
-  const opts=loans.slice(0,50).map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('');
+  const opts=loans.slice(0,50).map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)} · ${paidTag(l)})</option>`).join('');
   const pays=(DB_get('payments')||[]).slice().reverse();
   return `
   <div class="page-header"><div class="page-title">💰 ${t('paymentTitle')}</div></div>
@@ -2310,7 +2328,7 @@ window.filterPawnLoans=function(){
     : loans.slice(0,50);
   // 重新渲染下拉选项
   sel.innerHTML=matched.length
-    ? matched.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)})</option>`).join('')
+    ? matched.map(l=>`<option value="${l.id}">#${l.id} — ${esc(l.customer)} (${esc(l.phoneModel)} · ${fmt(l.loanAmount)} · ${paidTag(l)})</option>`).join('')
     : `<option value="">— ${kw?'无匹配合同':'暂无进行中合同'} —</option>`;
   // 更新提示
   if(countEl) countEl.textContent=kw?`${matched.length}/${loans.length}`:'';
@@ -2442,6 +2460,8 @@ window.deletePayment=async function(id){
 // ══════════════════════════════════════════════════════
 // EXTENSION 续期
 // ══════════════════════════════════════════════════════
+// 续期固定综合费率：利息1.5% + 手续费10% = 11.5%/月（可手动修改单笔）
+const EXT_INTEREST_RATE=11.5;
 function renderExtension(){
   if(_currentUser&&_currentUser.role==='readonly'){
     return `<div class="page-header"><div class="page-title">🔄 ${t('extension')}</div></div>
@@ -2598,7 +2618,7 @@ window.calcExtension=function(){
   const newAmt=+(document.getElementById('extNewAmount')?.value||0);
   const baseAmt=newAmt>0?newAmt:remainP;
   const extPeriods=+(document.getElementById('extPeriods')?.value||1);
-  const mInt=parseFloat((baseAmt*(l.monthlyRate/100)).toFixed(2));
+  const mInt=parseFloat((baseAmt*(EXT_INTEREST_RATE/100)).toFixed(2));
   const mP=parseFloat((baseAmt/extPeriods).toFixed(2));
   const el=document.getElementById('extMonthlyInt');
   if(el) el.value=mInt.toFixed(2);
@@ -2672,6 +2692,7 @@ window.submitExtension=async function(){
   }
   l.periods+=extPeriods;
   l.status='进行中';
+  l.customerSegment='repeat'; // 续期后自动归入「复购合同」
   if(!l.extensions) l.extensions=[];
   l.extensions.push({date:extDate,extPeriods,extFee,remainPrincipal:remainP,newMonthlyInterest:mInt});
   loans[li]=l; DB_set('loans',loans);
@@ -3981,31 +4002,60 @@ function renderIOBList(){
         <input value="${esc(window._iobSearch||'')}" oninput="window._iobSearch=this.value;nav('iob')" placeholder="搜索姓名/电话/合同号" style="font-size:12px;padding:4px 10px;border:1px solid #1565c0;border-radius:6px;font-family:inherit;width:180px;outline:none">
       </div>
     </div>
-    ${!sorted.length?`<div class="empty-state"><div class="ei">🪙</div><p>${t('noRecord')}</p></div>`:`
-    <div class="table-wrap"><table>
-      <tr><th>#</th><th>客户</th><th>手机型号</th><th>放款日期</th><th>到手金额</th><th>应还本金</th><th>每期利息</th><th>下次收息日</th><th>状态</th><th>操作</th></tr>
-      ${sorted.map(l=>{
-        const od=iobOverdueDays(l);
-        const statusHtml=l.status==='已结清'
-          ?`<span class="badge badge-gray">已结清</span>`
-          :od>0?`<span class="badge badge-red">逾期${od}天</span>`:`<span class="badge badge-green">计息中</span>`;
-        return `<tr>
-          <td class="text-blue">#${l.id}</td>
-          <td class="fw700">${esc(l.customer)}<div style="font-size:11px;color:var(--muted)">${esc(l.customerPhone||'')}</div></td>
-          <td style="font-size:12px">${esc(l.phoneBrand||'')} ${esc(l.phoneModel)}</td>
-          <td style="font-size:12px">${l.date||''}</td>
-          <td>${fmt(l.actualDisbursed)}</td>
-          <td class="fw700">${fmt(l.principal)}</td>
-          <td class="text-green">${fmt(l.periodInterestAmount)}</td>
-          <td style="font-size:12px">${l.status==='已结清'?'—':(l.nextDueDate||'')}</td>
-          <td>${statusHtml}</td>
-          <td style="white-space:nowrap">
-            ${l.status==='计息中'?`<button class="btn btn-primary btn-sm" onclick="collectIOBInterest(${l.id})">收息</button> <button class="btn btn-success btn-sm" onclick="redeemIOBLoan(${l.id})">赎回结清</button>`:`<span style="font-size:11px;color:var(--muted)">${l.redemption?.date||''}</span>`}
-          </td>
-        </tr>`;
-      }).join('')}
-    </table></div>`}
+    ${buildIOBTable(sorted)}
   </div>`;
+}
+function buildIOBTable(list){
+  if(!list.length) return `<div class="empty-state"><div class="ei">🪙</div><p>${t('noRecord')}</p></div>`;
+  const groups={};
+  list.forEach(l=>{ const d=l.date||'未知'; if(!groups[d]) groups[d]=[]; groups[d].push(l); });
+  const sortedDates=Object.keys(groups).sort().reverse();
+  const totalCount=list.length;
+  const totalPrincipal=list.reduce((a,l)=>a+(+l.principal||0),0);
+  const summaryHtml=`<div class="card" style="margin-bottom:12px;padding:10px 16px;background:#eef4ff;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-weight:700;color:var(--navy);font-size:13px">📊 当前筛选结果</span>
+      <span style="background:var(--navy);color:#fff;border-radius:12px;padding:2px 12px;font-size:12px;font-weight:700">共 ${totalCount} 笔</span>
+      <span style="color:var(--orange);font-weight:700;font-size:13px">应还本金合计 ${fmt(totalPrincipal)}</span>
+    </div>`;
+  const thead=`<tr><th>#</th><th>客户</th><th>手机型号</th><th>放款日期</th><th>到手金额</th><th>应还本金</th><th>每期利息</th><th>下次收息日</th><th>状态</th><th>操作</th></tr>`;
+  return summaryHtml+sortedDates.map(date=>{
+    const dayLoans=groups[date];
+    const uid='iobday_'+date.replace(/-/g,'');
+    const dayAmt=dayLoans.reduce((a,l)=>a+(+l.principal||0),0);
+    return `<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden">
+      <div onclick="toggleDayGroup('${uid}')" style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:#f0f4ff;cursor:pointer;user-select:none;border-bottom:1px solid #e0e0e0">
+        <span id="${uid}_icon" style="font-size:14px;transition:.2s">${window._openDays&&window._openDays.has(uid)?'▼':'▶'}</span>
+        <span style="font-weight:700;color:var(--navy);font-size:14px">📅 ${date}</span>
+        <span style="background:var(--navy);color:#fff;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:700">${dayLoans.length} 笔</span>
+        <span style="color:var(--orange);font-weight:700;font-size:13px">${fmt(dayAmt)}</span>
+      </div>
+      <div id="${uid}" style="overflow:auto;display:${window._openDays&&window._openDays.has(uid)?'':'none'}">
+        <table style="width:100%;border-collapse:collapse">
+          ${thead}
+          ${dayLoans.map(l=>{
+            const od=iobOverdueDays(l);
+            const statusHtml=l.status==='已结清'
+              ?`<span class="badge badge-gray">已结清</span>`
+              :od>0?`<span class="badge badge-red">逾期${od}天</span>`:`<span class="badge badge-green">计息中</span>`;
+            return `<tr>
+              <td class="text-blue">#${l.id}</td>
+              <td class="fw700">${esc(l.customer)}<div style="font-size:11px;color:var(--muted)">${esc(l.customerPhone||'')}</div></td>
+              <td style="font-size:12px">${esc(l.phoneBrand||'')} ${esc(l.phoneModel)}</td>
+              <td style="font-size:12px">${l.date||''}</td>
+              <td>${fmt(l.actualDisbursed)}</td>
+              <td class="fw700">${fmt(l.principal)}</td>
+              <td class="text-green">${fmt(l.periodInterestAmount)}</td>
+              <td style="font-size:12px">${l.status==='已结清'?'—':(l.nextDueDate||'')}</td>
+              <td>${statusHtml}</td>
+              <td style="white-space:nowrap">
+                ${l.status==='计息中'?`<button class="btn btn-primary btn-sm" onclick="collectIOBInterest(${l.id})">收息</button> <button class="btn btn-success btn-sm" onclick="redeemIOBLoan(${l.id})">赎回结清</button>`:`<span style="font-size:11px;color:var(--muted)">${l.redemption?.date||''}</span>`}
+              </td>
+            </tr>`;
+          }).join('')}
+        </table>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 window.collectIOBInterest=function(id){
