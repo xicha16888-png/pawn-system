@@ -2521,7 +2521,8 @@ function renderExtension(){
         <input type="number" id="extNewAmount" value="0" step="0.01" placeholder="0 = 不替换借款金额" oninput="calcExtension()">
       </div>
       <div class="form-group"><label>${t('newMonthlyInterest')} <span style="font-size:10px;color:var(--muted)">${_lang==='en'?'(editable)':'（可修改）'}</span></label>
-        <input type="number" id="extMonthlyInt" step="0.01" placeholder="0.00" style="background:#f3e5f5;font-weight:700;color:var(--purple)" oninput="calcExtTotal()"></div>
+        <input type="number" id="extMonthlyInt" step="0.01" placeholder="0.00" style="background:#f3e5f5;font-weight:700;color:var(--purple)" oninput="calcExtTotal()">
+        <div id="extRateHint" style="font-size:11px;color:var(--purple);margin-top:4px;font-weight:600"></div></div>
       <div class="form-group"><label>${_lang==='km'?'សរុបថ្ងៃទូទាត់ ($)':_lang==='en'?'Total Due on Date ($)':'还款日总额 ($)'}</label>
         <input id="extDayTotal" readonly style="background:#e8f5e9;font-weight:700;color:var(--green);font-size:15px"></div>
     </div>
@@ -2626,6 +2627,10 @@ window.calcExtension=function(){
   const total=mInt+mP;
   const tot=document.getElementById('extDayTotal');
   if(tot) tot.value=fmt(total);
+  const rateHint=document.getElementById('extRateHint');
+  if(rateHint) rateHint.textContent=baseAmt>0
+    ?`💡 利率：${EXT_INTEREST_RATE}%（利息1.5%+手续费10%）× 借款 ${fmt(baseAmt)} = ${fmt(mInt)}`
+    :`💡 利率：${EXT_INTEREST_RATE}%（利息1.5%+手续费10%）`;
 };
 window.calcExtTotal=function(){
   // 手动修改利息后重新计算还款日总额
@@ -2639,6 +2644,13 @@ window.calcExtTotal=function(){
   const mInt=+(document.getElementById('extMonthlyInt')?.value||0);
   const tot=document.getElementById('extDayTotal');
   if(tot) tot.value=fmt(mInt+mP);
+  const rateHint=document.getElementById('extRateHint');
+  if(rateHint){
+    const effRate=baseAmt>0?(mInt/baseAmt*100):0;
+    rateHint.textContent=baseAmt>0
+      ?`💡 手动调整后利率：约 ${effRate.toFixed(2)}%（借款 ${fmt(baseAmt)}）`
+      :`💡 利率：${EXT_INTEREST_RATE}%（利息1.5%+手续费10%）`;
+  }
 };
 window.submitExtension=async function(){
   if(_currentUser&&_currentUser.role==='readonly'){alert('无权限：只读账户不能操作续期');return;}
