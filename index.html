@@ -2566,8 +2566,7 @@ function renderExtension(){
       <div class="form-group"><label>${t('newMonthlyInterest')} <span style="font-size:10px;color:var(--muted)">${_lang==='en'?'(editable)':'（可修改）'}</span></label>
         <input type="number" id="extMonthlyInt" step="0.01" placeholder="0.00" style="background:#f3e5f5;font-weight:700;color:var(--purple)" oninput="calcExtTotal()">
         <div id="extRateHint" style="font-size:11px;color:var(--purple);margin-top:4px;font-weight:600"></div></div>
-      <div class="form-group"><label>${_lang==='km'?'សរុបថ្ងៃទូទាត់ ($)':_lang==='en'?'Total Due on Date ($)':'还款日总额 ($)'}</label>
-        <input id="extDayTotal" readonly style="background:#e8f5e9;font-weight:700;color:var(--green);font-size:15px"></div>
+
       <div class="form-group"><label>每月应还款 ($)</label>
         <input id="extMonthlyTotal" readonly style="background:#e3f2fd;font-weight:700;color:#1565c0;font-size:15px" placeholder="利息+本金"></div>
       <div class="form-group"><label>续期总应还款 ($)</label>
@@ -2672,9 +2671,6 @@ window.calcExtension=function(){
   if(el) el.value=mInt.toFixed(2);
   const monthlyTotal=mInt+mP;
   const grandTotal=monthlyTotal*extPeriods;
-  // 还款日总额
-  const tot=document.getElementById('extDayTotal');
-  if(tot) tot.value=fmt(monthlyTotal);
   // 每月应还款
   const monthlyEl=document.getElementById('extMonthlyTotal');
   if(monthlyEl) monthlyEl.value=`${fmt(monthlyTotal)}  (利息 ${fmt(mInt)} + 本金 ${fmt(mP)})`;
@@ -2698,8 +2694,6 @@ window.calcExtTotal=function(){
   const monthlyTotal=mInt+mP;
   const grandTotal=monthlyTotal*extPeriods;
   // 还款日总额（当期利息+本金）
-  const tot=document.getElementById('extDayTotal');
-  if(tot) tot.value=fmt(monthlyTotal);
   // 每月应还款
   const monthlyEl=document.getElementById('extMonthlyTotal');
   if(monthlyEl) monthlyEl.value=fmt(monthlyTotal)+` (利息${fmt(mInt)} + 本金${fmt(mP)})`;
