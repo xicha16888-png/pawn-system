@@ -2670,10 +2670,17 @@ window.calcExtension=function(){
   const mP=parseFloat((baseAmt/extPeriods).toFixed(2));
   const el=document.getElementById('extMonthlyInt');
   if(el) el.value=mInt.toFixed(2);
-  // 计算还款日总额（每月利息+每月本金）
-  const total=mInt+mP;
+  const monthlyTotal=mInt+mP;
+  const grandTotal=monthlyTotal*extPeriods;
+  // 还款日总额
   const tot=document.getElementById('extDayTotal');
-  if(tot) tot.value=fmt(total);
+  if(tot) tot.value=fmt(monthlyTotal);
+  // 每月应还款
+  const monthlyEl=document.getElementById('extMonthlyTotal');
+  if(monthlyEl) monthlyEl.value=`${fmt(monthlyTotal)}  (利息 ${fmt(mInt)} + 本金 ${fmt(mP)})`;
+  // 续期总应还款
+  const grandEl=document.getElementById('extGrandTotal');
+  if(grandEl) grandEl.value=`${fmt(grandTotal)}  (${extPeriods}期 × ${fmt(monthlyTotal)})`;
   const rateHint=document.getElementById('extRateHint');
   if(rateHint) rateHint.textContent=baseAmt>0
     ?`💡 利率：${EXT_INTEREST_RATE}%（利息1.5%+手续费10%）× 借款 ${fmt(baseAmt)} = ${fmt(mInt)}`
