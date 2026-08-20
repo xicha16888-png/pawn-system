@@ -2301,6 +2301,7 @@ function renderPaymentAdd(){
       <button class="btn btn-success" onclick="submitPayment()">${t('confirmPayment')}</button>
     </div>
     <div id="payMsg" style="margin-top:10px"></div>
+    <div id="pScheduleWrap"></div>
   </div>
   <div class="card">
     <div class="card-title" style="margin-bottom:14px">${t('recentPayments')}</div>
@@ -2351,6 +2352,48 @@ window.loadLoanPeriods=function(){
   const sel=document.getElementById('pPeriod'); if(!l||!sel) return;
   sel.innerHTML=l.schedule.filter(p=>!p.paid).map(p=>`<option value="${p.period}">${p.period} ${t('period')} (${p.dueDate})</option>`).join('');
   autoFillPayment();
+  // 显示每期还款明细表
+  const wrap=document.getElementById('pScheduleWrap');
+  if(!wrap) return;
+  const paidCount=l.schedule.filter(p=>p.paid).length;
+  const totalCount=l.schedule.length;
+  const remaining=totalCount-paidCount;
+  let html=`<div style="margin-top:12px;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden">
+    <div style="background:#1a3a5c;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;display:flex;gap:16px;flex-wrap:wrap">
+      <span>📋 还款明细 — ${esc(l.customer)}</span>
+      <span style="background:rgba(255,255,255,.15);border-radius:10px;padding:1px 8px">已还 ${paidCount}/${totalCount} 期</span>
+      <span style="background:rgba(255,200,0,.25);border-radius:10px;padding:1px 8px">剩余 ${remaining} 期</span>
+    </div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+      <tr style="background:#f5f5f5;font-weight:700">
+        <th style="padding:6px 10px;text-align:left;white-space:nowrap">期次</th>
+        <th style="padding:6px 10px;text-align:left;white-space:nowrap">应还日期</th>
+        <th style="padding:6px 10px;text-align:right;white-space:nowrap">应收利息</th>
+        <th style="padding:6px 10px;text-align:right;white-space:nowrap">应收本金</th>
+        <th style="padding:6px 10px;text-align:right;white-space:nowrap">应收合计</th>
+        <th style="padding:6px 10px;text-align:right;white-space:nowrap">实收金额</th>
+        <th style="padding:6px 10px;text-align:left;white-space:nowrap">实收日期</th>
+        <th style="padding:6px 10px;text-align:center;white-space:nowrap">状态</th>
+      </tr>`;
+  l.schedule.forEach(p=>{
+    const due=p.principalDue+p.interestDue;
+    const actualTotal=p.paid?((+p.paidPrincipal||0)+(+p.paidInterest||0)+(+p.penalty||0)):0;
+    const statusBg=p.paid?'#e8f5e9':'#fff3e0';
+    const statusColor=p.paid?'#2e7d32':'#e65100';
+    const statusText=p.paid?'✅ 已还':'⏳ 未还';
+    html+=`<tr style="border-top:1px solid #eee;background:${statusBg}">
+      <td style="padding:6px 10px;font-weight:700">第 ${p.period} 期</td>
+      <td style="padding:6px 10px;color:#555">${p.dueDate||'—'}</td>
+      <td style="padding:6px 10px;text-align:right">${fmt(p.interestDue)}</td>
+      <td style="padding:6px 10px;text-align:right">${fmt(p.principalDue)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700">${fmt(due)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:${p.paid?'#2e7d32':'#bbb'}">${p.paid?fmt(actualTotal):'—'}</td>
+      <td style="padding:6px 10px;color:#555">${p.paidDate||'—'}</td>
+      <td style="padding:6px 10px;text-align:center;color:${statusColor};font-weight:700">${statusText}</td>
+    </tr>`;
+  });
+  html+=`</table></div></div>`;
+  wrap.innerHTML=html;
 };
 window.autoFillPayment=function(){
   const id=+(document.getElementById('pLoan')?.value||0);
@@ -2525,6 +2568,10 @@ function renderExtension(){
         <div id="extRateHint" style="font-size:11px;color:var(--purple);margin-top:4px;font-weight:600"></div></div>
       <div class="form-group"><label>${_lang==='km'?'សរុបថ្ងៃទូទាត់ ($)':_lang==='en'?'Total Due on Date ($)':'还款日总额 ($)'}</label>
         <input id="extDayTotal" readonly style="background:#e8f5e9;font-weight:700;color:var(--green);font-size:15px"></div>
+      <div class="form-group"><label>每月应还款 ($)</label>
+        <input id="extMonthlyTotal" readonly style="background:#e3f2fd;font-weight:700;color:#1565c0;font-size:15px" placeholder="利息+本金"></div>
+      <div class="form-group"><label>续期总应还款 ($)</label>
+        <input id="extGrandTotal" readonly style="background:#fce4ec;font-weight:700;color:#c62828;font-size:15px" placeholder="总金额"></div>
     </div>
     <div class="btn-row">
       <button class="btn btn-purple" onclick="submitExtension()">${t('confirmExtension')}</button>
@@ -2633,7 +2680,6 @@ window.calcExtension=function(){
     :`💡 利率：${EXT_INTEREST_RATE}%（利息1.5%+手续费10%）`;
 };
 window.calcExtTotal=function(){
-  // 手动修改利息后重新计算还款日总额
   const id=+(document.getElementById('extLoan')?.value||0);
   const l=(DB_get('loans')||[]).find(x=>x.id===id); if(!l) return;
   const remainP=l.loanAmount-l.schedule.filter(p=>p.paid).reduce((a,p)=>a+(+p.paidPrincipal||0),0);
@@ -2642,8 +2688,17 @@ window.calcExtTotal=function(){
   const extPeriods=+(document.getElementById('extPeriods')?.value||1);
   const mP=parseFloat((baseAmt/extPeriods).toFixed(2));
   const mInt=+(document.getElementById('extMonthlyInt')?.value||0);
+  const monthlyTotal=mInt+mP;
+  const grandTotal=monthlyTotal*extPeriods;
+  // 还款日总额（当期利息+本金）
   const tot=document.getElementById('extDayTotal');
-  if(tot) tot.value=fmt(mInt+mP);
+  if(tot) tot.value=fmt(monthlyTotal);
+  // 每月应还款
+  const monthlyEl=document.getElementById('extMonthlyTotal');
+  if(monthlyEl) monthlyEl.value=fmt(monthlyTotal)+` (利息${fmt(mInt)} + 本金${fmt(mP)})`;
+  // 续期总应还款
+  const grandEl=document.getElementById('extGrandTotal');
+  if(grandEl) grandEl.value=fmt(grandTotal)+` (${extPeriods}期 × ${fmt(monthlyTotal)})`;
   const rateHint=document.getElementById('extRateHint');
   if(rateHint){
     const effRate=baseAmt>0?(mInt/baseAmt*100):0;
